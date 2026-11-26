@@ -31,7 +31,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
@@ -53,46 +53,9 @@
   isolation: isolate;
 }
 
-.sidebar::before,
-.sidebar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-size: cover;
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  transition: opacity 420ms ease;
-}
-
-.sidebar::before {
-  background-image:
-    linear-gradient(180deg, var(--atmo-veil-top) 0%, var(--atmo-veil-top) 39%, var(--atmo-veil-mid) 59%, var(--atmo-veil-low) 100%),
-    url('../assets/sidebar-day.webp?v=20261126-19');
-  filter: saturate(0.44) contrast(0.88) brightness(1.05);
-  opacity: 0.62;
-}
-
-.sidebar::after {
-  background-image:
-    linear-gradient(180deg, var(--atmo-veil-top) 0%, var(--atmo-veil-top) 39%, var(--atmo-veil-mid) 59%, var(--atmo-veil-low) 100%),
-    url('../assets/sidebar-night.webp?v=20261126-19');
-  filter: saturate(0.52) contrast(0.92) brightness(0.86);
-  opacity: 0;
-}
-
-[data-theme="dark"] .sidebar::before {
-  opacity: 0;
-}
-
-[data-theme="dark"] .sidebar::after {
-  opacity: 0.68;
-}
-
 .sidebar > :not(.nav-pixel-canvas) {
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
 .brand-block {
@@ -233,46 +196,9 @@
   isolation: isolate;
 }
 
-.topbar::before,
-.topbar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-size: auto 100%, auto 112%;
-  background-position: center center, center bottom;
-  background-repeat: no-repeat, repeat-x;
-  transition: opacity 420ms ease;
-}
-
-.topbar::before {
-  background-image:
-    linear-gradient(90deg, var(--atmo-veil-top) 0%, var(--atmo-veil-bar) 40%, var(--atmo-veil-mid) 56%, var(--atmo-veil-bar) 74%, var(--atmo-veil-top) 100%),
-    url('../assets/topbar-day.webp?v=20261126-19');
-  filter: saturate(0.38) contrast(0.84) brightness(1.06);
-  opacity: 0.56;
-}
-
-.topbar::after {
-  background-image:
-    linear-gradient(90deg, var(--atmo-veil-top) 0%, var(--atmo-veil-bar) 40%, var(--atmo-veil-mid) 56%, var(--atmo-veil-bar) 74%, var(--atmo-veil-top) 100%),
-    url('../assets/topbar-night.webp?v=20261126-19');
-  filter: saturate(0.46) contrast(0.88) brightness(0.84);
-  opacity: 0;
-}
-
-[data-theme="dark"] .topbar::before {
-  opacity: 0;
-}
-
-[data-theme="dark"] .topbar::after {
-  opacity: 0.60;
-}
-
 .topbar > :not(.nav-pixel-canvas) {
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
 .topbar-left {
