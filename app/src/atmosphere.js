@@ -3,7 +3,7 @@
  * - Mode A fixed ambient backdrop (z-index: 0, pointer-events: none)
  * - 1x1 sRGB Color Bridge (zero hardcoded colors in JS)
  * - Pre-baked 256x256 archival cotton grain (rendered once)
- * - Static architectural ledger margin rules & compass arcs outside --atmo-safe-left
+ * - Soft daylight vignette + wide-viewport margin rule strictly outside content zone
  * - Zero RAF loops, zero pointermove listeners, auto-resync on theme change
  */
 
@@ -55,7 +55,6 @@ function prebakeCottonGrain(grainHost, bridge) {
   const img = ctx.createImageData(size, size);
   const buf = img.data;
 
-  // Deterministic LCG so grain is crisp and reproducible without Math.random flicker
   let seed = 1337;
   for (let i = 0; i < buf.length; i += 4) {
     seed = (seed * 1664525 + 1013904223) >>> 0;
@@ -63,7 +62,7 @@ function prebakeCottonGrain(grainHost, bridge) {
     buf[i] = ink.r;
     buf[i + 1] = ink.g;
     buf[i + 2] = ink.b;
-    buf[i + 3] = shade > 128 ? 22 : 6;
+    buf[i + 3] = shade > 128 ? 20 : 5;
   }
   ctx.putImageData(img, 0, 0);
   grainHost.style.backgroundImage = `url(${offscreen.toDataURL('image/png')})`;
@@ -100,48 +99,39 @@ export function initAtmosphere() {
     const accent = bridge.resolveRgb('--accent-primary');
     const isLight = relativeLuminance(bg.r, bg.g, bg.b) > 0.179;
 
-    // Gentle daylight or studio-lamp ambient wash (no neon, perceptible 6%-14% delta)
-    const cx = width * 0.86;
-    const cy = Math.max(safeTop + 80, height * 0.22);
-    const rad = Math.max(width, height) * 0.55;
+    // Warm studio/window daylight wash (subtractive/gentle alpha, zero visual clash)
+    const cx = width * 0.85;
+    const cy = Math.max(safeTop + 60, height * 0.18);
+    const rad = Math.max(width, height) * 0.52;
     const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, rad);
-    grad.addColorStop(0, bridge.rgba(accent, isLight ? 0.08 : 0.11));
-    grad.addColorStop(0.55, bridge.rgba(accent, isLight ? 0.03 : 0.04));
+    grad.addColorStop(0, bridge.rgba(accent, isLight ? 0.07 : 0.10));
+    grad.addColorStop(0.55, bridge.rgba(accent, isLight ? 0.025 : 0.035));
     grad.addColorStop(1, bridge.rgba(bg, 0));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
-    // Architectural ledger margin & subtle surveyor arcs outside --atmo-safe-left
-    const rightZoneX = Math.max(safeLeft + 32, width - 56);
-    ctx.strokeStyle = bridge.rgba(ink, isLight ? 0.11 : 0.13);
-    ctx.lineWidth = 1;
+    // Draw outer architectural ledger rule strictly in empty right margin on wide viewports
+    // so lines NEVER cross behind content cards or mobile screens
+    const contentEdge = safeLeft + 1220;
+    if (width >= contentEdge + 56) {
+      const ruleX = width - 44;
+      ctx.strokeStyle = bridge.rgba(ink, isLight ? 0.10 : 0.12);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ruleX, safeTop + 20);
+      ctx.lineTo(ruleX, height - 24);
+      ctx.moveTo(ruleX + 4, safeTop + 20);
+      ctx.lineTo(ruleX + 4, height - 24);
+      ctx.stroke();
 
-    // Double vertical accounting margin rule on far right edge
-    ctx.beginPath();
-    ctx.moveTo(rightZoneX, safeTop + 16);
-    ctx.lineTo(rightZoneX, height - 24);
-    ctx.moveTo(rightZoneX + 4, safeTop + 16);
-    ctx.lineTo(rightZoneX + 4, height - 24);
-    ctx.stroke();
-
-    // Subtle tick scale marks along far-right ledger margin
-    ctx.beginPath();
-    for (let y = safeTop + 32; y < height - 32; y += 32) {
-      const len = (y - safeTop) % 128 === 0 ? 14 : 6;
-      ctx.moveTo(rightZoneX + 4, y);
-      ctx.lineTo(rightZoneX + 4 + len, y);
+      ctx.beginPath();
+      for (let y = safeTop + 40; y < height - 32; y += 36) {
+        const tick = (y - safeTop) % 144 === 0 ? 12 : 5;
+        ctx.moveTo(ruleX + 4, y);
+        ctx.lineTo(ruleX + 4 + tick, y);
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
-
-    // Subtle geometric drafting compass arc in upper-right focal zone
-    ctx.strokeStyle = bridge.rgba(accent, isLight ? 0.09 : 0.12);
-    ctx.beginPath();
-    ctx.arc(width - 32, safeTop + 32, 160, Math.PI * 0.55, Math.PI * 0.98);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(width - 32, safeTop + 32, 224, Math.PI * 0.60, Math.PI * 0.94);
-    ctx.stroke();
 
     document.documentElement.dataset.atmosphereReady = 'true';
   }

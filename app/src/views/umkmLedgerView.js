@@ -2,7 +2,9 @@ import { formatRp } from '../engine/accounting.js';
 import {
   ACCOUNT_MAP,
   computeUmkmAccounting,
+  getAccountLedger,
   sanitizeUmkmState,
+  UMKM_CHART_OF_ACCOUNTS,
   UMKM_QUICK_PRESETS,
 } from '../engine/journalEngine.js';
 import { downloadCustomWorkbook } from '../engine/xlsxExporter.js';
@@ -16,10 +18,10 @@ function esc(str) {
 }
 
 const UMKM_TABS = [
-  { id: 'journal', label: '1. Jurnal Umum (Debit = Kredit)' },
+  { id: 'journal', label: '1. Jurnal Umum' },
   { id: 'statements', label: '2. Laba Rugi & Neraca' },
   { id: 'cashflow', label: '3. Laporan Arus Kas' },
-  { id: 'trial', label: '4. Neraca Saldo' },
+  { id: 'trial', label: '4. Neraca Saldo & Buku Besar' },
 ];
 
 export function renderUmkmLedgerView(
@@ -30,6 +32,7 @@ export function renderUmkmLedgerView(
   const umkm = state.umkmState;
   const activeTab = state.umkmTab || 'journal';
   const query = (state.umkmQuery || '').trim().toLowerCase();
+  const selectedAccCode = state.umkmLedgerAccount || '1-101';
   const report = computeUmkmAccounting(umkm.entries);
   const { incomeStatement: is, balanceSheet: bs, cashFlow: cf } = report;
 
@@ -56,8 +59,8 @@ export function renderUmkmLedgerView(
       <section class="panel">
         <div class="panel-header">
           <div>
-            <h3 class="panel-title">Catat Cepat Transaksi UMKM</h3>
-            <p class="panel-subtitle">Pilih jenis transaksi harian di bawah; akun Debit &amp; Kredit terisi otomatis agar selalu seimbang</p>
+            <h3 class="panel-title">Catat Cepat Transaksi Harian UMKM</h3>
+            <p class="panel-subtitle">Klik salah satu transaksi di bawah atau pakai mode Jurnal Split untuk transaksi multi-akun</p>
           </div>
           <button type="button" id="open-journal-modal-btn" class="btn btn-primary btn-sm">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -65,14 +68,14 @@ export function renderUmkmLedgerView(
           </button>
         </div>
 
-        <div class="grid-3">
+        <div class="grid-cards">
           ${UMKM_QUICK_PRESETS.slice(0, 6)
             .map(
               (p) => `
-              <button type="button" class="bp-node" data-quick-preset="${p.id}" style="text-align:left;cursor:pointer;">
-                <h4 style="margin:0;font-size:13.5px;">${p.label}</h4>
-                <span style="font-size:12px;color:var(--text-secondary);">${p.hint}</span>
-                <span class="code-tag">D: ${ACCOUNT_MAP[p.debit]?.name} | K: ${ACCOUNT_MAP[p.credit]?.name}</span>
+              <button type="button" class="preset-card" data-quick-preset="${p.id}">
+                <span class="preset-title">${p.label}</span>
+                <span class="preset-hint">${p.hint}</span>
+                <span class="preset-accounts">D: ${ACCOUNT_MAP[p.debit]?.name} | K: ${ACCOUNT_MAP[p.credit]?.name}</span>
               </button>`
             )
             .join('')}
@@ -83,7 +86,7 @@ export function renderUmkmLedgerView(
         <div class="toolbar" style="margin-bottom:14px;">
           <div>
             <h3 class="panel-title">Buku Jurnal Umum (${filtered.length} Transaksi)</h3>
-            <p class="panel-subtitle">Setiap transaksi wajib memenuhi Total Debit = Total Kredit sebelum tersimpan</p>
+            <p class="panel-subtitle">Setiap baris tervalidasi Total Debit = Total Kredit sebelum tersimpan</p>
           </div>
           <div class="search-box">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -93,30 +96,30 @@ export function renderUmkmLedgerView(
 
         ${
           filtered.length === 0
-            ? `<div class="empty-state">Belum ada transaksi yang cocok. Klik "Tambah Transaksi Baru" untuk mencatat.</div>`
+            ? `<div class="empty-state">Belum ada transaksi yang cocok. Klik "Tambah Transaksi Baru" untuk mulai mencatat.</div>`
             : `
             <div class="table-wrap">
               <table class="ledger-table">
                 <thead>
                   <tr>
-                    <th style="width:90px">ID &amp; Tgl</th>
-                    <th>Keterangan &amp; Akun</th>
+                    <th>ID &amp; Tanggal</th>
+                    <th>Keterangan &amp; Pasangan Akun</th>
                     <th class="num">Debit (Rp)</th>
                     <th class="num">Kredit (Rp)</th>
-                    <th style="width:46px"></th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   ${filtered
-                    .map((entry) => {
-                      const rows = entry.lines
+                    .map((entry) =>
+                      entry.lines
                         .map(
                           (ln, idx) => `
                           <tr>
                             <td>${idx === 0 ? `<div class="code-tag">${esc(entry.id)}</div><div class="code-tag">${esc(entry.date)}</div>` : ''}</td>
                             <td>
                               ${idx === 0 ? `<div style="font-weight:600;margin-bottom:3px;">${esc(entry.description)}</div>` : ''}
-                              <div style="padding-left:${ln.credit > 0 ? '18px' : '0'};color:var(--text-secondary);">
+                              <div class="${ln.credit > 0 ? 'credit-indent' : ''}">
                                 <span class="code-tag">${esc(ln.accountCode)}</span> ${esc(ACCOUNT_MAP[ln.accountCode]?.name || ln.accountCode)}
                               </div>
                             </td>
@@ -133,9 +136,8 @@ export function renderUmkmLedgerView(
                             </td>
                           </tr>`
                         )
-                        .join('');
-                      return rows;
-                    })
+                        .join('')
+                    )
                     .join('')}
                   <tr class="row-total">
                     <td colspan="2">TOTAL DEBIT &amp; KREDIT JURNAL UMUM</td>
@@ -150,8 +152,11 @@ export function renderUmkmLedgerView(
       </section>
     `;
   } else if (activeTab === 'statements') {
+    const netMargin = is.totalRevenue > 0 ? (is.netIncome / is.totalRevenue) * 100 : 0;
+    const eqRatio = bs.totalAssets > 0 ? (bs.endingEquity / bs.totalAssets) * 100 : 0;
+
     bodyHtml = `
-      <div class="grid-2">
+      <div class="grid-split">
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -159,7 +164,7 @@ export function renderUmkmLedgerView(
               <p class="panel-subtitle">${esc(umkm.businessName)} | ${esc(umkm.periodLabel)}</p>
             </div>
             <span class="badge ${is.netIncome >= 0 ? 'badge-ok' : 'badge-err'}">
-              ${is.netIncome >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH'}
+              Margin ${netMargin.toFixed(1)}%
             </span>
           </div>
           <div class="table-wrap">
@@ -167,9 +172,13 @@ export function renderUmkmLedgerView(
               <thead><tr><th>Kode</th><th>Pos Laba Rugi</th><th class="num">Nominal (Rp)</th></tr></thead>
               <tbody>
                 <tr class="row-section"><td colspan="3">Pendapatan Usaha</td></tr>
-                ${is.revenueAccounts
-                  .map((a) => `<tr><td class="code-tag">${a.code}</td><td>${a.name}</td><td class="num">${formatRp(a.balance)}</td></tr>`)
-                  .join('')}
+                ${
+                  is.revenueAccounts.length === 0
+                    ? `<tr><td></td><td style="color:var(--text-muted)">Belum ada pendapatan tercatat</td><td class="num">${formatRp(0)}</td></tr>`
+                    : is.revenueAccounts
+                        .map((a) => `<tr><td class="code-tag">${a.code}</td><td>${a.name}</td><td class="num">${formatRp(a.balance)}</td></tr>`)
+                        .join('')
+                }
                 <tr class="row-subtotal"><td></td><td>Total Pendapatan</td><td class="num">${formatRp(is.totalRevenue)}</td></tr>
                 <tr class="row-section"><td colspan="3">HPP &amp; Beban Operasional</td></tr>
                 <tr><td class="code-tag">5-101</td><td>Harga Pokok Penjualan (HPP)</td><td class="num">${formatRp(is.cogs)}</td></tr>
@@ -188,7 +197,7 @@ export function renderUmkmLedgerView(
           <div class="panel-header">
             <div>
               <h3 class="panel-title">Laporan Neraca (Balance Sheet)</h3>
-              <p class="panel-subtitle">Per ${esc(umkm.periodLabel)}</p>
+              <p class="panel-subtitle">Per ${esc(umkm.periodLabel)} | Porsi Ekuitas ${eqRatio.toFixed(1)}%</p>
             </div>
             <span class="badge ${bs.isBalanced ? 'badge-ok' : 'badge-err'}">
               ${bs.isBalanced ? 'SEIMBANG' : 'SELISIH'}
@@ -199,9 +208,13 @@ export function renderUmkmLedgerView(
               <thead><tr><th>Kode</th><th>Pos Neraca</th><th class="num">Nominal (Rp)</th></tr></thead>
               <tbody>
                 <tr class="row-section"><td colspan="3">Aset Lancar</td></tr>
-                ${bs.currentAssetAccounts
-                  .map((a) => `<tr><td class="code-tag">${a.code}</td><td>${a.name}</td><td class="num">${formatRp(a.balance)}</td></tr>`)
-                  .join('')}
+                ${
+                  bs.currentAssetAccounts.length === 0
+                    ? `<tr><td></td><td style="color:var(--text-muted)">Belum ada aset lancar</td><td class="num">${formatRp(0)}</td></tr>`
+                    : bs.currentAssetAccounts
+                        .map((a) => `<tr><td class="code-tag">${a.code}</td><td>${a.name}</td><td class="num">${formatRp(a.balance)}</td></tr>`)
+                        .join('')
+                }
                 <tr class="row-subtotal"><td></td><td>Total Aset Lancar</td><td class="num">${formatRp(bs.totalCurrentAssets)}</td></tr>
                 <tr class="row-section"><td colspan="3">Aset Tetap</td></tr>
                 <tr><td class="code-tag">1-201</td><td>Peralatan &amp; Mesin Usaha</td><td class="num">${formatRp(bs.equipmentGross)}</td></tr>
@@ -225,6 +238,25 @@ export function renderUmkmLedgerView(
       </div>
     `;
   } else if (activeTab === 'cashflow') {
+    const maxAbsCf = Math.max(
+      1,
+      Math.abs(cf.operatingCash),
+      Math.abs(cf.investingCash),
+      Math.abs(cf.financingCash)
+    );
+    const cfBar = (label, val) => {
+      const pct = Math.min(100, Math.max(4, (Math.abs(val) / maxAbsCf) * 100));
+      const cls = val >= 0 ? 'meter-fill' : 'meter-fill err';
+      return `
+        <div class="meter-row">
+          <div class="meter-head">
+            <span>${label}</span>
+            <span class="tabular">${formatRp(val)}</span>
+          </div>
+          <div class="meter-track"><div class="${cls}" style="width:${pct.toFixed(1)}%"></div></div>
+        </div>`;
+    };
+
     const renderCfRows = (title, items, subtotal) => `
       <tr class="row-section"><td colspan="3">${title}</td></tr>
       ${
@@ -248,17 +280,31 @@ export function renderUmkmLedgerView(
       <section class="panel">
         <div class="panel-header">
           <div>
-            <h3 class="panel-title">Laporan Arus Kas (Cash Flow Statement)</h3>
-            <p class="panel-subtitle">${esc(umkm.businessName)} | Metode langsung dari mutasi akun Kas &amp; Bank (1-101)</p>
+            <h3 class="panel-title">Ringkasan Komposisi Arus Kas</h3>
+            <p class="panel-subtitle">Proporsi kas masuk (+) dan kas keluar (-) berdasarkan 3 aktivitas utama</p>
           </div>
           <span class="badge ${cf.isCashReconciled ? 'badge-ok' : 'badge-err'}">
             ${cf.isCashReconciled ? 'SINKRON DENGAN KAS NERACA' : 'TIDAK SINKRON'}
           </span>
         </div>
+        <div class="meter-list">
+          ${cfBar('Aktivitas Operasi (Penjualan, Stok & Beban)', cf.operatingCash)}
+          ${cfBar('Aktivitas Investasi (Peralatan & Aset Tetap)', cf.investingCash)}
+          ${cfBar('Aktivitas Pendanaan (Modal, Prive & Pinjaman)', cf.financingCash)}
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title">Rincian Laporan Arus Kas</h3>
+            <p class="panel-subtitle">${esc(umkm.businessName)} | Metode langsung dari mutasi akun Kas &amp; Bank (1-101)</p>
+          </div>
+        </div>
         <div class="table-wrap">
           <table class="ledger-table">
             <thead>
-              <tr><th style="width:110px">Tanggal</th><th>Uraian Aktivitas Kas</th><th class="num">Arus Kas (Rp)</th></tr>
+              <tr><th>Tanggal</th><th>Uraian Aktivitas Kas</th><th class="num">Arus Kas (Rp)</th></tr>
             </thead>
             <tbody>
               ${renderCfRows('Aktivitas Operasi', cf.items.operating, cf.operatingCash)}
@@ -273,86 +319,152 @@ export function renderUmkmLedgerView(
       </section>
     `;
   } else if (activeTab === 'trial') {
+    const ledger = getAccountLedger(umkm.entries, selectedAccCode);
+
     bodyHtml = `
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h3 class="panel-title">Neraca Saldo (Trial Balance)</h3>
-            <p class="panel-subtitle">Ringkasan seluruh akun Buku Besar untuk memastikan keseimbangan Debit &amp; Kredit</p>
+      <div class="stack-col">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Neraca Saldo (Trial Balance)</h3>
+              <p class="panel-subtitle">Klik baris akun mana saja untuk melihat kartu mutasi Buku Besar di bawah</p>
+            </div>
+            <span class="badge ${report.isTrialBalanced ? 'badge-ok' : 'badge-err'}">
+              ${report.isTrialBalanced ? 'DEBIT = KREDIT SEIMBANG' : 'TIDAK SEIMBANG'}
+            </span>
           </div>
-          <span class="badge ${report.isTrialBalanced ? 'badge-ok' : 'badge-err'}">
-            ${report.isTrialBalanced ? 'DEBIT = KREDIT SEIMBANG' : 'TIDAK SEIMBANG'}
-          </span>
-        </div>
-        <div class="table-wrap">
-          <table class="ledger-table">
-            <thead>
-              <tr>
-                <th style="width:85px">Kode</th>
-                <th>Nama Akun</th>
-                <th class="num">Mutasi Debit</th>
-                <th class="num">Mutasi Kredit</th>
-                <th class="num">Saldo Debit</th>
-                <th class="num">Saldo Kredit</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${report.trialBalance
-                .map(
-                  (r) => `
-                  <tr>
-                    <td class="code-tag">${r.code}</td>
-                    <td>${r.name}</td>
-                    <td class="num">${formatRp(r.totalDebit)}</td>
-                    <td class="num">${formatRp(r.totalCredit)}</td>
-                    <td class="num">${r.tbDebit > 0 ? formatRp(r.tbDebit) : '—'}</td>
-                    <td class="num">${r.tbCredit > 0 ? formatRp(r.tbCredit) : '—'}</td>
-                  </tr>`
-                )
-                .join('')}
-              <tr class="row-total">
-                <td colspan="2">TOTAL NERACA SALDO</td>
-                <td class="num">${formatRp(report.journalTotalDebit)}</td>
-                <td class="num">${formatRp(report.journalTotalCredit)}</td>
-                <td class="num">${formatRp(report.tbDebit)}</td>
-                <td class="num">${formatRp(report.tbCredit)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <div class="table-wrap">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Nama Akun</th>
+                  <th class="num">Mutasi Debit</th>
+                  <th class="num">Mutasi Kredit</th>
+                  <th class="num">Saldo Debit</th>
+                  <th class="num">Saldo Kredit</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${report.trialBalance
+                  .map(
+                    (r) => `
+                    <tr data-pick-ledger="${r.code}" style="cursor:pointer;${r.code === selectedAccCode ? 'background:var(--accent-primary-tint);' : ''}">
+                      <td class="code-tag">${r.code}</td>
+                      <td><strong>${r.name}</strong></td>
+                      <td class="num">${formatRp(r.totalDebit)}</td>
+                      <td class="num">${formatRp(r.totalCredit)}</td>
+                      <td class="num">${r.tbDebit > 0 ? formatRp(r.tbDebit) : '—'}</td>
+                      <td class="num">${r.tbCredit > 0 ? formatRp(r.tbCredit) : '—'}</td>
+                    </tr>`
+                  )
+                  .join('')}
+                <tr class="row-total">
+                  <td colspan="2">TOTAL NERACA SALDO</td>
+                  <td class="num">${formatRp(report.journalTotalDebit)}</td>
+                  <td class="num">${formatRp(report.journalTotalCredit)}</td>
+                  <td class="num">${formatRp(report.tbDebit)}</td>
+                  <td class="num">${formatRp(report.tbCredit)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Kartu Buku Besar (Running Balance)</h3>
+              <p class="panel-subtitle">Riwayat mutasi &amp; saldo berjalan per akun secara kronologis</p>
+            </div>
+            <div style="min-width:220px;flex:0 1 280px;">
+              <select id="ledger-account-select" aria-label="Pilih akun Buku Besar">
+                ${UMKM_CHART_OF_ACCOUNTS.map(
+                  (a) => `<option value="${a.code}" ${a.code === selectedAccCode ? 'selected' : ''}>${a.code} — ${a.name}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
+
+          ${
+            ledger.rows.length === 0
+              ? `<div class="empty-state">Belum ada transaksi pada akun ini.</div>`
+              : `
+              <div class="table-wrap">
+                <table class="ledger-table">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>No Jurnal</th>
+                      <th>Keterangan</th>
+                      <th class="num">Debit (Rp)</th>
+                      <th class="num">Kredit (Rp)</th>
+                      <th class="num">Saldo Berjalan (Rp)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${ledger.rows
+                      .map(
+                        (rw) => `
+                        <tr>
+                          <td class="code-tag">${esc(rw.date)}</td>
+                          <td class="code-tag">${esc(rw.id)}</td>
+                          <td>${esc(rw.description)}</td>
+                          <td class="num">${rw.debit > 0 ? formatRp(rw.debit) : '—'}</td>
+                          <td class="num">${rw.credit > 0 ? formatRp(rw.credit) : '—'}</td>
+                          <td class="num"><strong>${formatRp(rw.runningBalance)}</strong></td>
+                        </tr>`
+                      )
+                      .join('')}
+                    <tr class="row-total">
+                      <td colspan="5">SALDO AKHIR (${esc(ledger.account?.name)})</td>
+                      <td class="num">${formatRp(ledger.endingBalance)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>`
+          }
+        </section>
+      </div>
     `;
   }
 
   container.innerHTML = `
-    <section class="ledger-balance-strip" aria-label="Pita verifikasi keseimbangan akuntansi UMKM">
-      <div class="strip-equation">
-        <div class="strip-item">
-          <span class="strip-label">Total Debit = Kredit</span>
-          <span class="strip-val">${formatRp(report.journalTotalDebit)}</span>
-        </div>
-        <div class="strip-item">
-          <span class="strip-label">Aset = Liabilitas + Ekuitas</span>
-          <span class="strip-val">${formatRp(bs.totalAssets)}</span>
-        </div>
-        <div class="strip-item">
-          <span class="strip-label">Kas Akhir (Arus Kas = Neraca)</span>
-          <span class="strip-val">${formatRp(cf.endingCash)}</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <section class="ledger-mast" aria-label="Pita verifikasi keseimbangan akuntansi UMKM">
+      <div class="ledger-mast-top">
         <span class="badge ${allSynced ? 'badge-ok' : 'badge-err'}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
           ${allSynced ? '3 LAPORAN SINKRON & SEIMBANG' : 'PERLU CEK JURNAL'}
         </span>
-        <button type="button" id="umkm-export-xlsx" class="btn btn-primary btn-sm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Unduh Laporan Excel
-        </button>
+        <div class="mast-actions">
+          <button type="button" id="umkm-export-xlsx" class="btn btn-primary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Unduh Laporan Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="ledger-proof-grid">
+        <div class="proof-cell">
+          <span class="proof-label">Total Debit = Kredit Jurnal</span>
+          <span class="proof-value">${formatRp(report.journalTotalDebit)}</span>
+          <span class="proof-sub">${umkm.entries.length} transaksi tercatat</span>
+        </div>
+        <div class="proof-cell">
+          <span class="proof-label">Total Aset = Liabilitas + Ekuitas</span>
+          <span class="proof-value">${formatRp(bs.totalAssets)}</span>
+          <span class="proof-sub">Laba bersih: ${formatRp(is.netIncome)}</span>
+        </div>
+        <div class="proof-cell">
+          <span class="proof-label">Saldo Kas (Arus Kas = Neraca)</span>
+          <span class="proof-value">${formatRp(cf.endingCash)}</span>
+          <span class="proof-sub">Operasi: ${formatRp(cf.operatingCash)}</span>
+        </div>
       </div>
     </section>
 
     <section class="panel">
-      <div class="grid-3" style="align-items:end;">
+      <div class="grid-form">
         <div class="field-group">
           <label for="umkm-biz-name">Nama Usaha UMKM</label>
           <input id="umkm-biz-name" type="text" value="${esc(umkm.businessName)}" placeholder="Contoh: Kedai Kopi Nusantara" />
@@ -383,6 +495,14 @@ export function renderUmkmLedgerView(
 
   container.querySelectorAll('[data-umkm-tab]').forEach((btn) => {
     btn.addEventListener('click', () => onUpdateUmkm({ umkmTab: btn.dataset.umkmTab }));
+  });
+
+  container.querySelectorAll('[data-pick-ledger]').forEach((row) => {
+    row.addEventListener('click', () => onUpdateUmkm({ umkmLedgerAccount: row.dataset.pickLedger }));
+  });
+
+  container.querySelector('#ledger-account-select')?.addEventListener('change', (e) => {
+    onUpdateUmkm({ umkmLedgerAccount: e.target.value });
   });
 
   container.querySelector('#umkm-biz-name')?.addEventListener('change', (e) => {
@@ -441,7 +561,7 @@ export function renderUmkmLedgerView(
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1200);
-    onToast('Cadangan data pembukuan JSON berhasil diunduh.');
+    onToast('Cadangan data pembukuan berhasil diunduh.');
   });
 
   container.querySelector('#umkm-restore-json')?.addEventListener('change', async (e) => {
@@ -451,13 +571,13 @@ export function renderUmkmLedgerView(
       const parsed = JSON.parse(await file.text());
       const res = sanitizeUmkmState(parsed);
       if (!res.ok) {
-        onToast(`Gagal pulihkan: ${res.error}`);
+        onToast(`Gagal memuat: ${res.error}`);
         return;
       }
       onUpdateUmkm({ umkmState: res.state });
-      onToast(`Berhasil memulihkan ${res.state.entries.length} transaksi terverifikasi seimbang.`);
+      onToast(`Berhasil memuat ${res.state.entries.length} transaksi terverifikasi seimbang.`);
     } catch {
-      onToast('File cadangan JSON tidak valid atau rusak.');
+      onToast('File cadangan tidak valid atau rusak.');
     } finally {
       e.target.value = '';
     }

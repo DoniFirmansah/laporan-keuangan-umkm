@@ -25,39 +25,40 @@ export function renderOverviewView(container, { onNavigate }) {
   const assetShareFixed = (nr.totalFixedAssets / nr.totalAssets) * 100;
 
   container.innerHTML = `
-    <section class="ledger-balance-strip" aria-label="Pita keseimbangan neraca utama">
-      <div class="strip-equation">
-        <div class="strip-item">
-          <span class="strip-label">Total Aset (Lancar Maju)</span>
-          <span class="strip-val">${formatRp(nr.totalAssets)}</span>
-        </div>
-        <span class="strip-label" aria-hidden="true">=</span>
-        <div class="strip-item">
-          <span class="strip-label">Liabilitas</span>
-          <span class="strip-val">${formatRp(nr.totalLiabilities)}</span>
-        </div>
-        <span class="strip-label" aria-hidden="true">+</span>
-        <div class="strip-item">
-          <span class="strip-label">Ekuitas</span>
-          <span class="strip-val">${formatRp(nr.totalEquity)}</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <section class="ledger-mast" aria-label="Pita keseimbangan neraca utama">
+      <div class="ledger-mast-top">
         <span class="badge badge-ok">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
           NERACA SEIMBANG
         </span>
-        <button type="button" class="btn btn-primary btn-sm" data-goto="umkm">
-          Buka Pembukuan UMKM (Debit = Kredit)
-        </button>
+        <div class="mast-actions">
+          <button type="button" class="btn btn-primary btn-sm" data-goto="umkm">
+            Buka Pembukuan UMKM
+          </button>
+        </div>
+      </div>
+
+      <div class="ledger-proof-grid">
+        <div class="proof-cell">
+          <span class="proof-label">Total Aset (Lancar Maju)</span>
+          <span class="proof-value">${formatRp(nr.totalAssets)}</span>
+        </div>
+        <div class="proof-cell">
+          <span class="proof-label">Total Liabilitas</span>
+          <span class="proof-value">${formatRp(nr.totalLiabilities)}</span>
+        </div>
+        <div class="proof-cell">
+          <span class="proof-label">Total Ekuitas</span>
+          <span class="proof-value">${formatRp(nr.totalEquity)}</span>
+        </div>
       </div>
     </section>
 
-    <section class="kpi-grid" aria-label="Ikhtisar metrik Bab 6">
+    <section class="kpi-grid" aria-label="Ikhtisar metrik usaha">
       <article class="kpi-card">
         <span class="kpi-label">Laba Bersih (Rambak Maju)</span>
         <span class="kpi-value">${formatRp(ss.netIncome)}</span>
-        <span class="kpi-meta">Single Step aktual (cetakan buku: Rp9.495.000)</span>
+        <span class="kpi-meta">Single Step aktual (referensi buku: Rp9.495.000)</span>
       </article>
       <article class="kpi-card">
         <span class="kpi-label">Ekuitas Akhir (Laundry Resik)</span>
@@ -76,16 +77,16 @@ export function renderOverviewView(container, { onNavigate }) {
       </article>
     </section>
 
-    <div class="grid-2">
+    <div class="grid-split">
       <section class="panel">
         <div class="panel-header">
           <div>
             <h3 class="panel-title">Komposisi Neraca Usaha Jasa Lancar Maju</h3>
-            <p class="panel-subtitle">Proporsi aset lancar vs aset tetap serta liabilitas vs ekuitas (Tabel 6.5)</p>
+            <p class="panel-subtitle">Proporsi aset lancar vs aset tetap serta pendanaan ekuitas</p>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" data-goto="statements">Lihat Tabel 6.1–6.5</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-goto="statements">Lihat Contoh Laporan</button>
         </div>
-        <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="meter-list">
           <div class="meter-row">
             <div class="meter-head">
               <span>Aset Tidak Tetap (Lancar)</span>
@@ -113,10 +114,10 @@ export function renderOverviewView(container, { onNavigate }) {
       <section class="panel">
         <div class="panel-header">
           <div>
-            <h3 class="panel-title">Tujuan &amp; Pihak Pengguna Laporan Keuangan</h3>
-            <p class="panel-subtitle">Ringkasan materi konseptual Bab 6 PDF (hlm. 154–167)</p>
+            <h3 class="panel-title">Pihak Pengguna Laporan Keuangan</h3>
+            <p class="panel-subtitle">Manfaat laporan keuangan bagi pemangku kepentingan bisnis</p>
           </div>
-          <button type="button" class="btn btn-secondary btn-sm" data-goto="casestudy">Analisis PT ABC</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-goto="casestudy">Analisis Rasio</button>
         </div>
         <div class="table-wrap">
           <table class="ledger-table">
@@ -146,15 +147,15 @@ export function renderOverviewView(container, { onNavigate }) {
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h3 class="panel-title">Empat Tujuan Analisis Laporan Keuangan</h3>
-          <p class="panel-subtitle">Kerangka kerja analisis kinerja sebelum membaca rasio likuiditas, solvabilitas, dan rentabilitas</p>
+          <h3 class="panel-title">Empat Pilar Analisis Laporan Keuangan</h3>
+          <p class="panel-subtitle">Kerangka kerja evaluasi sebelum membaca rasio likuiditas, solvabilitas, dan rentabilitas</p>
         </div>
       </div>
-      <div class="grid-2">
+      <div class="grid-cards">
         ${BAB6_CONCEPTS.tujuanAnalisis
           .map(
             (item) => `
-            <div class="bp-node">
+            <div class="concept-card">
               <h4>${item.kode}</h4>
               <p style="margin:0;font-size:13px;color:var(--text-secondary);">${item.arti}</p>
             </div>

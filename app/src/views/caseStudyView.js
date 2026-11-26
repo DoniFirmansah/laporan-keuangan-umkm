@@ -40,29 +40,34 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
       .join('');
 
   container.innerHTML = `
-    <section class="ledger-balance-strip">
-      <div class="strip-equation">
-        <div class="strip-item">
-          <span class="strip-label">Total Aset PT ABC (2023)</span>
-          <span class="strip-val">Rp16.840 jt</span>
+    <section class="ledger-mast">
+      <div class="ledger-mast-top">
+        <span class="badge badge-ok">Neraca 2022 &amp; 2023 Seimbang</span>
+      </div>
+      <div class="ledger-proof-grid">
+        <div class="proof-cell">
+          <span class="proof-label">Total Aset PT ABC (2023)</span>
+          <span class="proof-value">Rp16.840 jt</span>
+          <span class="proof-sub">2022: Rp16.780 jt</span>
         </div>
-        <div class="strip-item">
-          <span class="strip-label">Penjualan Bersih (2023)</span>
-          <span class="strip-val">Rp24.860 jt</span>
+        <div class="proof-cell">
+          <span class="proof-label">Penjualan Bersih (2023)</span>
+          <span class="proof-value">Rp24.860 jt</span>
+          <span class="proof-sub">2022: Rp20.750 jt</span>
         </div>
-        <div class="strip-item">
-          <span class="strip-label">Laba Bersih (EAT)</span>
-          <span class="strip-val">Rp940 jt</span>
+        <div class="proof-cell">
+          <span class="proof-label">Laba Bersih Setelah Pajak</span>
+          <span class="proof-value">Rp940 jt</span>
+          <span class="proof-sub">Naik +147,4% YoY</span>
         </div>
       </div>
-      <span class="badge badge-ok">Neraca 2022 &amp; 2023 Seimbang</span>
     </section>
 
     <section class="panel">
       <div class="panel-header">
         <div>
           <h3 class="panel-title">Analisis 10 Rasio Keuangan PT ABC (2022 vs 2023)</h3>
-          <p class="panel-subtitle">Sesuai rumus Bab 6 halaman 167–172 beserta pembanding kunci jawaban buku</p>
+          <p class="panel-subtitle">Perbandingan rasio Likuiditas, Solvabilitas, dan Rentabilitas beserta rumus baku</p>
         </div>
         <div class="tab-bar" style="border:none;padding:0;" role="tablist" aria-label="Filter kategori rasio">
           ${categories
@@ -73,7 +78,7 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
         </div>
       </div>
 
-      <div class="grid-2">
+      <div class="grid-cards">
         ${filteredRatios
           .map((r23) => {
             const r22 = ratios22.find((x) => x.id === r23.id);
@@ -94,17 +99,17 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
                 <div class="ratio-formula">${r23.formula}</div>
                 <div class="ratio-values">
                   <div>
-                    <span class="strip-label">2023 (Rumus)</span>
-                    <div class="kpi-value" style="font-size:20px">${fmtVal(r23)}</div>
+                    <span class="proof-label">2023 (Aktual)</span>
+                    <div class="kpi-value" style="font-size:19px">${fmtVal(r23)}</div>
                   </div>
                   <div style="text-align:right">
-                    <span class="strip-label">2022</span>
-                    <div class="tabular" style="font-size:15px;font-weight:600;color:var(--text-secondary)">${fmtVal(r22)}</div>
+                    <span class="proof-label">2022</span>
+                    <div class="tabular" style="font-size:14.5px;font-weight:600;color:var(--text-secondary)">${fmtVal(r22)}</div>
                   </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:6px;">
+                <div class="meter-list">
                   <div class="meter-row">
-                    <div class="meter-head"><span>2023</span><span class="tabular">Buku: ${r23.book2023}</span></div>
+                    <div class="meter-head"><span>2023</span><span class="tabular">Ref: ${r23.book2023}</span></div>
                     <div class="meter-track"><div class="meter-fill" style="width:${w23.toFixed(1)}%"></div></div>
                   </div>
                   <div class="meter-row">
@@ -119,7 +124,7 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
       </div>
     </section>
 
-    <div class="grid-2">
+    <div class="stack-col">
       <section class="panel">
         <div class="panel-header">
           <div>
@@ -133,9 +138,9 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
               <tr>
                 <th>Kode</th>
                 <th>Pos Neraca</th>
-                <th class="num">2022</th>
-                <th class="num">2023</th>
-                <th class="num">YoY</th>
+                <th class="num">2022 (Jt)</th>
+                <th class="num">2023 (Jt)</th>
+                <th class="num">Pertumbuhan YoY</th>
               </tr>
             </thead>
             <tbody>
@@ -171,9 +176,9 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
               <tr>
                 <th>Kode</th>
                 <th>Pos Laba Rugi</th>
-                <th class="num">2022</th>
-                <th class="num">2023</th>
-                <th class="num">YoY</th>
+                <th class="num">2022 (Jt)</th>
+                <th class="num">2023 (Jt)</th>
+                <th class="num">Pertumbuhan YoY</th>
               </tr>
             </thead>
             <tbody>

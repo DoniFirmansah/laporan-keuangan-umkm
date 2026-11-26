@@ -16,8 +16,8 @@ import {
 const SUBTABS = [
   { id: 't61', label: '6.1 LR Single Step' },
   { id: 't62', label: '6.2 LR Multiple Step' },
-  { id: 't63', label: '6.3 & 6.4 Perubahan Ekuitas' },
-  { id: 't65', label: '6.5 Neraca Lancar Maju' },
+  { id: 't63', label: '6.3 & 6.4 Ekuitas' },
+  { id: 't65', label: '6.5 Neraca' },
 ];
 
 function esc(str) {
@@ -45,7 +45,7 @@ export function renderStatementsView(container, state, { onStateChange }) {
     bodyHtml = `
       <div class="alert alert-warn" role="note">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <div><strong>Catatan Buku PDF:</strong> ${TABLE_6_1_SINGLE_STEP.bookValues.errataNote}</div>
+        <div><strong>Catatan Rekonsiliasi:</strong> ${TABLE_6_1_SINGLE_STEP.bookValues.errataNote}</div>
       </div>
 
       <section class="panel">
@@ -55,14 +55,14 @@ export function renderStatementsView(container, state, { onStateChange }) {
             <p class="panel-subtitle">${TABLE_6_1_SINGLE_STEP.period}</p>
           </div>
           <span class="badge ${calcMode === 'actual' ? 'badge-ok' : 'badge-warn'}">
-            ${calcMode === 'actual' ? 'Hitungan Rumus Aktual' : 'Mode Cetakan Buku PDF'}
+            ${calcMode === 'actual' ? 'Hitungan Rumus Aktual' : 'Mode Cetakan Buku'}
           </span>
         </div>
         <div class="table-wrap">
           <table class="ledger-table">
             <thead>
               <tr>
-                <th style="width:90px">Kode</th>
+                <th>Kode</th>
                 <th>Uraian Akun</th>
                 <th class="num">Nominal (Rp)</th>
               </tr>
@@ -140,7 +140,7 @@ export function renderStatementsView(container, state, { onStateChange }) {
     bodyHtml = `
       <div class="alert alert-warn" role="note">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <div><strong>Catatan Buku PDF:</strong> ${d.bookValues.errataNote}</div>
+        <div><strong>Catatan Rekonsiliasi:</strong> ${d.bookValues.errataNote}</div>
       </div>
 
       <section class="panel">
@@ -150,14 +150,14 @@ export function renderStatementsView(container, state, { onStateChange }) {
             <p class="panel-subtitle">${d.period}</p>
           </div>
           <span class="badge ${calcMode === 'actual' ? 'badge-ok' : 'badge-warn'}">
-            ${calcMode === 'actual' ? 'Hitungan Rumus Aktual' : 'Mode Cetakan Buku PDF'}
+            ${calcMode === 'actual' ? 'Hitungan Rumus Aktual' : 'Mode Cetakan Buku'}
           </span>
         </div>
         <div class="table-wrap">
           <table class="ledger-table">
             <thead>
               <tr>
-                <th style="width:90px">Kode</th>
+                <th>Kode</th>
                 <th>Uraian Akun</th>
                 <th class="num">Nominal (Rp)</th>
               </tr>
@@ -193,7 +193,7 @@ export function renderStatementsView(container, state, { onStateChange }) {
             <h3 class="panel-title">${tbl.tableLabel} · ${tbl.title}</h3>
             <p class="panel-subtitle">${tbl.company} | ${tbl.period}</p>
           </div>
-          <span class="badge badge-ok">100% Sesuai Buku</span>
+          <span class="badge badge-ok">100% Sesuai</span>
         </div>
         <div class="table-wrap">
           <table class="ledger-table">
@@ -215,31 +215,31 @@ export function renderStatementsView(container, state, { onStateChange }) {
       </section>
     `;
 
-    bodyHtml = `<div class="grid-2">${renderEquityCard(TABLE_6_3_EQUITY_SOLE, eq1)}${renderEquityCard(TABLE_6_4_RETAINED_PT, eq2)}</div>`;
+    bodyHtml = `<div class="grid-split">${renderEquityCard(TABLE_6_3_EQUITY_SOLE, eq1)}${renderEquityCard(TABLE_6_4_RETAINED_PT, eq2)}</div>`;
   } else if (activeTab === 't65') {
     const d = TABLE_6_5_BALANCE_SHEET;
     const calc = computeBalanceSheet(d);
 
     bodyHtml = `
-      <div class="ledger-balance-strip">
-        <div class="strip-equation">
-          <div class="strip-item">
-            <span class="strip-label">Jumlah Aset</span>
-            <span class="strip-val">${formatRp(calc.totalAssets)}</span>
+      <section class="ledger-mast">
+        <div class="ledger-mast-top">
+          <span class="badge badge-ok">${calc.isBalanced ? 'NERACA SEIMBANG' : 'SELISIH'}</span>
+        </div>
+        <div class="ledger-proof-grid">
+          <div class="proof-cell">
+            <span class="proof-label">Jumlah Aset</span>
+            <span class="proof-value">${formatRp(calc.totalAssets)}</span>
           </div>
-          <span class="strip-label">=</span>
-          <div class="strip-item">
-            <span class="strip-label">Liabilitas</span>
-            <span class="strip-val">${formatRp(calc.totalLiabilities)}</span>
+          <div class="proof-cell">
+            <span class="proof-label">Total Liabilitas</span>
+            <span class="proof-value">${formatRp(calc.totalLiabilities)}</span>
           </div>
-          <span class="strip-label">+</span>
-          <div class="strip-item">
-            <span class="strip-label">Ekuitas</span>
-            <span class="strip-val">${formatRp(calc.totalEquity)}</span>
+          <div class="proof-cell">
+            <span class="proof-label">Total Ekuitas</span>
+            <span class="proof-value">${formatRp(calc.totalEquity)}</span>
           </div>
         </div>
-        <span class="badge badge-ok">${calc.isBalanced ? 'NERACA SEIMBANG' : 'SELISIH'}</span>
-      </div>
+      </section>
 
       <div class="alert alert-warn" role="note">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -257,7 +257,7 @@ export function renderStatementsView(container, state, { onStateChange }) {
           <table class="ledger-table">
             <thead>
               <tr>
-                <th style="width:90px">Kode</th>
+                <th>Kode</th>
                 <th>Akun Neraca</th>
                 <th class="num">Nilai / Akumulasi (Rp)</th>
                 <th class="num">Nilai Bersih / Golongan (Rp)</th>
@@ -360,13 +360,13 @@ export function renderStatementsView(container, state, { onStateChange }) {
 
   container.innerHTML = `
     <div class="toolbar no-print">
-      <div class="tab-bar" role="tablist" aria-label="Pilih tabel laporan keuangan">
+      <div class="tab-bar" style="border:none;padding:0;" role="tablist" aria-label="Pilih contoh laporan keuangan">
         ${SUBTABS.map(
           (t) => `<button type="button" role="tab" aria-selected="${activeTab === t.id}" class="tab-btn ${activeTab === t.id ? 'active' : ''}" data-tab="${t.id}">${t.label}</button>`
         ).join('')}
       </div>
 
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="toolbar-controls">
         <div class="search-box">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="stmt-search" type="search" value="${esc(state.statementQuery || '')}" placeholder="Cari nama atau kode akun..." aria-label="Cari akun laporan" />

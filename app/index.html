@@ -161,18 +161,17 @@
       <div id="jrn-error" class="alert alert-err" role="alert" hidden></div>
 
       <div class="form-stack">
-        <div class="field-group">
-          <label for="jrn-preset">Jenis Transaksi Cepat UMKM</label>
-          <select id="jrn-preset"></select>
-          <span class="field-hint">Memilih jenis transaksi akan mengisi pasangan akun Debit &amp; Kredit otomatis.</span>
+        <div class="segmented" role="group" aria-label="Mode pencatatan jurnal" style="align-self:flex-start;">
+          <button type="button" id="jrn-mode-simple" class="active">Mode Cepat UMKM</button>
+          <button type="button" id="jrn-mode-split">Jurnal Split (Multi-Baris)</button>
         </div>
 
-        <div class="grid-2">
+        <div class="grid-form">
           <div class="field-group">
             <label for="jrn-date">Tanggal <span class="req">*</span></label>
             <input id="jrn-date" type="date" required />
           </div>
-          <div class="field-group">
+          <div id="jrn-amount-wrap" class="field-group">
             <label for="jrn-amount">Nominal (Rp) <span class="req">*</span></label>
             <input id="jrn-amount" type="number" min="1" step="1000" placeholder="Contoh: 500000" required />
           </div>
@@ -183,18 +182,34 @@
           <input id="jrn-desc" type="text" placeholder="Contoh: Penjualan kopi &amp; roti shift pagi" maxlength="90" required />
         </div>
 
-        <div class="grid-2">
+        <div id="jrn-simple-fields" class="form-stack" style="margin:0;">
           <div class="field-group">
-            <label for="jrn-debit-acc">Akun Sisi DEBIT <span class="req">*</span></label>
-            <select id="jrn-debit-acc" required></select>
+            <label for="jrn-preset">Jenis Transaksi Cepat UMKM</label>
+            <select id="jrn-preset"></select>
+            <span class="field-hint">Otomatis memilih pasangan akun Debit &amp; Kredit standar akuntansi.</span>
           </div>
-          <div class="field-group">
-            <label for="jrn-credit-acc">Akun Sisi KREDIT <span class="req">*</span></label>
-            <select id="jrn-credit-acc" required></select>
+
+          <div class="grid-form">
+            <div class="field-group">
+              <label for="jrn-debit-acc">Akun Sisi DEBIT <span class="req">*</span></label>
+              <select id="jrn-debit-acc" required></select>
+            </div>
+            <div class="field-group">
+              <label for="jrn-credit-acc">Akun Sisi KREDIT <span class="req">*</span></label>
+              <select id="jrn-credit-acc" required></select>
+            </div>
           </div>
         </div>
 
-        <div id="jrn-balance-preview" class="alert alert-ok" style="justify-content:space-between;">
+        <div id="jrn-split-fields" class="form-stack" style="margin:0;" hidden>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="field-hint">Masukkan 2 atau lebih baris akun; pastikan Total Debit = Total Kredit.</span>
+            <button type="button" id="jrn-add-split-line" class="btn btn-secondary btn-sm">+ Tambah Baris</button>
+          </div>
+          <div id="jrn-split-list" class="split-lines-list"></div>
+        </div>
+
+        <div id="jrn-balance-preview" class="alert alert-ok" style="justify-content:space-between;flex-wrap:wrap;">
           <span>Verifikasi Keseimbangan:</span>
           <strong class="tabular">Debit = Kredit (SEIMBANG)</strong>
         </div>

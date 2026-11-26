@@ -496,3 +496,28 @@ export function computeUmkmAccounting(entries = []) {
     },
   };
 }
+
+export function getAccountLedger(entries = [], accountCode = '1-101') {
+  const account = ACCOUNT_MAP[accountCode];
+  if (!account) return { account: null, rows: [], endingBalance: 0 };
+
+  let running = 0;
+  const rows = [];
+  for (const entry of entries) {
+    for (const ln of entry.lines || []) {
+      if (ln.accountCode !== accountCode) continue;
+      const d = Number(ln.debit || 0);
+      const c = Number(ln.credit || 0);
+      running += account.normalSide === 'debit' ? d - c : c - d;
+      rows.push({
+        id: entry.id,
+        date: entry.date,
+        description: entry.description,
+        debit: d,
+        credit: c,
+        runningBalance: running,
+      });
+    }
+  }
+  return { account, rows, endingBalance: running };
+}

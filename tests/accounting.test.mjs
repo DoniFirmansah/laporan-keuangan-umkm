@@ -22,6 +22,7 @@ import {
 import {
   computeUmkmAccounting,
   DEFAULT_UMKM_STATE,
+  getAccountLedger,
   nextJournalId,
   sanitizeUmkmState,
   UMKM_QUICK_PRESETS,
@@ -229,4 +230,26 @@ test('Stress & Destructive Test: jurnal kosong, ID unik pasca hapus, JSON rusak,
   for (const r of zeroRatios) {
     assert.equal(Number.isFinite(r.value), true);
   }
+
+  // 6. Jurnal Split Multi-Baris (3 akun) & Buku Besar Running Balance
+  const splitEntry = {
+    id: 'JRN-099',
+    date: '2026-11-26',
+    description: 'Penjualan campuran tunai + tempo',
+    presetId: 'split',
+    lines: [
+      { accountCode: '1-101', debit: 1000000, credit: 0 },
+      { accountCode: '1-102', debit: 500000, credit: 0 },
+      { accountCode: '4-101', debit: 0, credit: 1500000 },
+    ],
+  };
+  assert.equal(validateJournalEntry(splitEntry).valid, true);
+  const splitRep = computeUmkmAccounting([...DEFAULT_UMKM_STATE.entries, splitEntry]);
+  assert.equal(splitRep.isJournalBalanced, true);
+  assert.equal(splitRep.balanceSheet.isBalanced, true);
+  assert.equal(splitRep.cashFlow.isCashReconciled, true);
+
+  const cashLedger = getAccountLedger([...DEFAULT_UMKM_STATE.entries, splitEntry], '1-101');
+  assert.equal(cashLedger.endingBalance, splitRep.cashFlow.endingCash);
+  assert.ok(cashLedger.rows.length > 5);
 });

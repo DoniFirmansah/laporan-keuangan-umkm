@@ -45,6 +45,7 @@ function loadInitialState() {
     theme: 'light',
     umkmTab: 'journal',
     umkmQuery: '',
+    umkmLedgerAccount: '1-101',
     umkmState: structuredClone(DEFAULT_UMKM_STATE),
     statementTab: 't61',
     calcMode: 'actual',
@@ -271,6 +272,93 @@ function applyJournalPreset(presetId) {
   }
 }
 
+let modalEntryMode = 'simple';
+let splitLinesDraft = [];
+
+function renderSplitLinesEditor() {
+  const listEl = document.getElementById('jrn-split-list');
+  if (!listEl) return;
+  const accOptions = UMKM_CHART_OF_ACCOUNTS.map(
+    (a) => `<option value="${a.code}">${a.code} — ${a.name}</option>`
+  ).join('');
+
+  listEl.innerHTML = splitLinesDraft
+    .map(
+      (ln, idx) => `
+      <div class="split-line-row" data-split-row="${idx}">
+        <select class="split-acc" aria-label="Akun baris ${idx + 1}">${accOptions}</select>
+        <input type="number" class="split-debit" min="0" step="1000" value="${ln.debit || ''}" placeholder="Debit (Rp)" aria-label="Debit baris ${idx + 1}" />
+        <input type="number" class="split-credit" min="0" step="1000" value="${ln.credit || ''}" placeholder="Kredit (Rp)" aria-label="Kredit baris ${idx + 1}" />
+        <button type="button" class="icon-btn split-del" ${splitLinesDraft.length <= 2 ? 'disabled' : ''} aria-label="Hapus baris ${idx + 1}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`
+    )
+    .join('');
+
+  listEl.querySelectorAll('[data-split-row]').forEach((rowEl) => {
+    const idx = Number(rowEl.dataset.splitRow);
+    const sel = rowEl.querySelector('.split-acc');
+    const debInp = rowEl.querySelector('.split-debit');
+    const crdInp = rowEl.querySelector('.split-credit');
+    const delBtn = rowEl.querySelector('.split-del');
+
+    sel.value = splitLinesDraft[idx].accountCode;
+    sel.addEventListener('change', (e) => {
+      splitLinesDraft[idx].accountCode = e.target.value;
+    });
+    debInp.addEventListener('input', (e) => {
+      const val = Math.max(0, Number(e.target.value || 0));
+      splitLinesDraft[idx].debit = val;
+      if (val > 0) {
+        splitLinesDraft[idx].credit = 0;
+        crdInp.value = '';
+      }
+      updateJournalBalancePreview();
+    });
+    crdInp.addEventListener('input', (e) => {
+      const val = Math.max(0, Number(e.target.value || 0));
+      splitLinesDraft[idx].credit = val;
+      if (val > 0) {
+        splitLinesDraft[idx].debit = 0;
+        debInp.value = '';
+      }
+      updateJournalBalancePreview();
+    });
+    delBtn.addEventListener('click', () => {
+      if (splitLinesDraft.length <= 2) return;
+      splitLinesDraft = splitLinesDraft.filter((_, i) => i !== idx);
+      renderSplitLinesEditor();
+      updateJournalBalancePreview();
+    });
+  });
+}
+
+function setJournalModalMode(mode) {
+  modalEntryMode = mode;
+  document.getElementById('jrn-mode-simple')?.classList.toggle('active', mode === 'simple');
+  document.getElementById('jrn-mode-split')?.classList.toggle('active', mode === 'split');
+  const simpleBox = document.getElementById('jrn-simple-fields');
+  const splitBox = document.getElementById('jrn-split-fields');
+  const amtWrap = document.getElementById('jrn-amount-wrap');
+  if (simpleBox) simpleBox.hidden = mode !== 'simple';
+  if (splitBox) splitBox.hidden = mode !== 'split';
+  if (amtWrap) amtWrap.hidden = mode !== 'simple';
+  if (mode === 'split') {
+    const debitAcc = document.getElementById('jrn-debit-acc')?.value || '1-101';
+    const creditAcc = document.getElementById('jrn-credit-acc')?.value || '4-101';
+    const amt = Math.max(0, Number(document.getElementById('jrn-amount')?.value || 0));
+    if (splitLinesDraft.length < 2) {
+      splitLinesDraft = [
+        { accountCode: debitAcc, debit: amt, credit: 0 },
+        { accountCode: creditAcc, debit: 0, credit: amt },
+      ];
+    }
+    renderSplitLinesEditor();
+  }
+  updateJournalBalancePreview();
+}
+
 function openJournalModal(presetId) {
   const dlg = document.getElementById('journal-dialog');
   const errEl = document.getElementById('jrn-error');
@@ -287,17 +375,38 @@ function openJournalModal(presetId) {
   }
   if (amountInp) amountInp.value = '';
   if (descInp) descInp.value = '';
+  splitLinesDraft = [];
   applyJournalPreset(presetId || UMKM_QUICK_PRESETS[0].id);
-  updateJournalBalancePreview();
+  setJournalModalMode('simple');
   dlg?.showModal();
 }
 
 function updateJournalBalancePreview() {
   const preview = document.getElementById('jrn-balance-preview');
+  if (!preview) return;
+
+  if (modalEntryMode === 'split') {
+    const totD = splitLinesDraft.reduce((s, l) => s + Number(l.debit || 0), 0);
+    const totC = splitLinesDraft.reduce((s, l) => s + Number(l.credit || 0), 0);
+    if (totD <= 0 && totC <= 0) {
+      preview.className = 'alert alert-warn';
+      preview.innerHTML = '<span>Verifikasi Split:</span><strong>Isi nominal Debit dan Kredit</strong>';
+      return;
+    }
+    if (Math.round(totD) !== Math.round(totC)) {
+      const diff = Math.abs(totD - totC);
+      preview.className = 'alert alert-err';
+      preview.innerHTML = `<span>Belum Seimbang:</span><strong class="tabular">Selisih Rp${diff.toLocaleString('id-ID')} (D Rp${totD.toLocaleString('id-ID')} ≠ K Rp${totC.toLocaleString('id-ID')})</strong>`;
+      return;
+    }
+    preview.className = 'alert alert-ok';
+    preview.innerHTML = `<span>Verifikasi Split:</span><strong class="tabular">Debit Rp${totD.toLocaleString('id-ID')} = Kredit Rp${totC.toLocaleString('id-ID')} (SEIMBANG)</strong>`;
+    return;
+  }
+
   const amount = Number(document.getElementById('jrn-amount')?.value || 0);
   const debitAcc = document.getElementById('jrn-debit-acc')?.value;
   const creditAcc = document.getElementById('jrn-credit-acc')?.value;
-  if (!preview) return;
 
   if (debitAcc && creditAcc && debitAcc === creditAcc) {
     preview.className = 'alert alert-err';
@@ -358,6 +467,14 @@ function wireGlobalControls() {
   const jrnForm = document.getElementById('journal-form');
   const jrnErr = document.getElementById('jrn-error');
 
+  document.getElementById('jrn-mode-simple')?.addEventListener('click', () => setJournalModalMode('simple'));
+  document.getElementById('jrn-mode-split')?.addEventListener('click', () => setJournalModalMode('split'));
+  document.getElementById('jrn-add-split-line')?.addEventListener('click', () => {
+    splitLinesDraft.push({ accountCode: '1-101', debit: 0, credit: 0 });
+    renderSplitLinesEditor();
+    updateJournalBalancePreview();
+  });
+
   document.getElementById('jrn-preset')?.addEventListener('change', (e) => {
     document.getElementById('jrn-desc').value = '';
     applyJournalPreset(e.target.value);
@@ -372,27 +489,39 @@ function wireGlobalControls() {
   jrnForm?.addEventListener('submit', (e) => {
     e.preventDefault();
     const date = document.getElementById('jrn-date').value;
-    const amount = Number(document.getElementById('jrn-amount').value);
     const description = document.getElementById('jrn-desc').value.trim();
-    const debitAcc = document.getElementById('jrn-debit-acc').value;
-    const creditAcc = document.getElementById('jrn-credit-acc').value;
     const presetId = document.getElementById('jrn-preset').value;
 
-    if (debitAcc === creditAcc) {
-      jrnErr.textContent = 'Akun sisi Debit dan Kredit tidak boleh sama.';
-      jrnErr.hidden = false;
-      return;
+    let lines = [];
+    if (modalEntryMode === 'split') {
+      lines = splitLinesDraft
+        .filter((l) => Number(l.debit || 0) > 0 || Number(l.credit || 0) > 0)
+        .map((l) => ({
+          accountCode: l.accountCode,
+          debit: Number(l.debit || 0),
+          credit: Number(l.credit || 0),
+        }));
+    } else {
+      const amount = Number(document.getElementById('jrn-amount').value);
+      const debitAcc = document.getElementById('jrn-debit-acc').value;
+      const creditAcc = document.getElementById('jrn-credit-acc').value;
+      if (debitAcc === creditAcc) {
+        jrnErr.textContent = 'Akun sisi Debit dan Kredit tidak boleh sama.';
+        jrnErr.hidden = false;
+        return;
+      }
+      lines = [
+        { accountCode: debitAcc, debit: amount, credit: 0 },
+        { accountCode: creditAcc, debit: 0, credit: amount },
+      ];
     }
 
     const candidate = {
       id: nextJournalId(state.umkmState.entries),
       date,
       description,
-      presetId,
-      lines: [
-        { accountCode: debitAcc, debit: amount, credit: 0 },
-        { accountCode: creditAcc, debit: 0, credit: amount },
-      ],
+      presetId: modalEntryMode === 'split' ? 'split' : presetId,
+      lines,
     };
 
     const check = validateJournalEntry(candidate);
@@ -409,7 +538,7 @@ function wireGlobalControls() {
     persistState();
     jrnDialog?.close();
     render();
-    showToast(`Transaksi ${candidate.id} tersimpan seimbang (Debit = Kredit Rp${amount.toLocaleString('id-ID')}).`);
+    showToast(`Transaksi ${candidate.id} tersimpan seimbang (Debit = Kredit Rp${check.totalDebit.toLocaleString('id-ID')}).`);
   });
 
   // Add account modal validation inside dialog

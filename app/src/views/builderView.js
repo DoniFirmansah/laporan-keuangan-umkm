@@ -54,40 +54,42 @@ export function renderBuilderView(
       .join('');
 
   container.innerHTML = `
-    <section class="ledger-balance-strip">
-      <div class="strip-equation">
-        <div class="strip-item">
-          <span class="strip-label">Total Aset</span>
-          <span class="strip-val">${formatRp(calc.totalAssets)}</span>
-        </div>
-        <span class="strip-label">=</span>
-        <div class="strip-item">
-          <span class="strip-label">Liabilitas + Ekuitas Akhir</span>
-          <span class="strip-val">${formatRp(calc.totalLiabAndEquity)}</span>
-        </div>
-        <div class="strip-item">
-          <span class="strip-label">Selisih</span>
-          <span class="strip-val">${formatRp(calc.balanceDiff)}</span>
+    <section class="ledger-mast">
+      <div class="ledger-mast-top">
+        <span class="badge ${calc.isBalanced ? 'badge-ok' : 'badge-err'}">
+          ${calc.isBalanced ? 'NERACA SEIMBANG' : 'TIDAK SEIMBANG'}
+        </span>
+        <div class="mast-actions">
+          <button type="button" id="add-account-btn" class="btn btn-secondary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Akun
+          </button>
+          <button type="button" id="reset-builder-btn" class="btn btn-ghost btn-sm">Reset Contoh</button>
+          <button type="button" id="export-custom-xlsx" class="btn btn-primary btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Unduh Laporan Excel
+          </button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span class="badge ${calc.isBalanced ? 'badge-ok' : 'badge-err'}">
-          ${calc.isBalanced ? 'SEIMBANG' : 'TIDAK SEIMBANG'}
-        </span>
-        <button type="button" id="add-account-btn" class="btn btn-secondary btn-sm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Tambah Akun
-        </button>
-        <button type="button" id="reset-builder-btn" class="btn btn-ghost btn-sm">Reset Contoh</button>
-        <button type="button" id="export-custom-xlsx" class="btn btn-primary btn-sm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Ekspor .xlsx Usaha Ini
-        </button>
+
+      <div class="ledger-proof-grid">
+        <div class="proof-cell">
+          <span class="proof-label">Total Aset</span>
+          <span class="proof-value">${formatRp(calc.totalAssets)}</span>
+        </div>
+        <div class="proof-cell">
+          <span class="proof-label">Liabilitas + Ekuitas Akhir</span>
+          <span class="proof-value">${formatRp(calc.totalLiabAndEquity)}</span>
+        </div>
+        <div class="proof-cell">
+          <span class="proof-label">Selisih Keseimbangan</span>
+          <span class="proof-value">${formatRp(calc.balanceDiff)}</span>
+        </div>
       </div>
     </section>
 
     <section class="panel">
-      <div class="grid-3">
+      <div class="grid-form">
         <div class="field-group">
           <label for="b-company">Nama Perusahaan / UMKM</label>
           <input id="b-company" type="text" value="${esc(custom.companyName)}" placeholder="Contoh: Toko Maju Bersama" />
@@ -106,7 +108,7 @@ export function renderBuilderView(
       </div>
     </section>
 
-    <div class="grid-2">
+    <div class="grid-split">
       <section class="panel">
         <div class="panel-header">
           <div>
@@ -209,7 +211,7 @@ export function renderBuilderView(
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h3 class="panel-title">Hasil Rasio Keuangan Usaha Mandiri (Live)</h3>
+          <h3 class="panel-title">Hasil Rasio Keuangan Usaha Mandiri</h3>
           <p class="panel-subtitle">Dihitung otomatis dari angka yang Anda masukkan di atas</p>
         </div>
       </div>

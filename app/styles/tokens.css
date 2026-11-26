@@ -1,11 +1,8 @@
 :root {
-  /* Safe zones & density contract */
   --atmo-safe-top: 64px;
   --atmo-safe-left: 264px;
   --atmo-safe-right: 24px;
   --atmo-safe-bottom: 24px;
-  --atmo-focal-x: 0.72;
-  --atmo-focal-y: 0.24;
 
   /* Archival Cotton Ledger — Light Mode (L > 0.179) */
   --bg-base: #f6f3eb;
@@ -15,16 +12,16 @@
   --bg-input: #f1ede3;
 
   --text-primary: #181b19;
-  --text-secondary: #424844;
-  --text-muted: #5d645f;
-  --text-placeholder: #737a74;
+  --text-secondary: #3f4641;
+  --text-muted: #5b625d;
+  --text-placeholder: #727973;
 
   --border-subtle: rgba(24, 27, 25, 0.09);
   --border-strong: rgba(24, 27, 25, 0.20);
 
   --accent-primary: #1d5942;
-  --accent-primary-hover: #164634;
-  --accent-primary-tint: rgba(29, 89, 66, 0.10);
+  --accent-primary-hover: #154432;
+  --accent-primary-tint: rgba(29, 89, 66, 0.09);
   --accent-on-primary: #f7faf8;
   --accent-secondary: #855e1c;
   --accent-secondary-tint: rgba(133, 94, 28, 0.11);
@@ -57,7 +54,7 @@
   --bg-input: #141815;
 
   --text-primary: #eceae2;
-  --text-secondary: #c2c6be;
+  --text-secondary: #c4c8c0;
   --text-muted: #989f97;
   --text-placeholder: #767d76;
 
@@ -95,6 +92,7 @@ html {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 body {
@@ -102,6 +100,7 @@ body {
   min-height: 100dvh;
   background-color: transparent;
   color: var(--text-primary);
+  overflow-x: clip;
 }
 
 :focus-visible {
