@@ -646,8 +646,9 @@
   pointer-events: none;
 }
 
+.search-box input[type="search"],
 .search-box input {
-  padding-left: 34px;
+  padding-left: 36px;
 }
 
 input[type="text"],
@@ -1071,11 +1072,30 @@ dialog.ledger-dialog::backdrop {
   }
 
   .split-line-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+    gap: 6px;
   }
 
   .split-line-row > select {
-    grid-column: 1 / -1;
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
+
+  .split-line-row > .split-del {
+    grid-column: 3 / 4;
+    grid-row: 1;
+    width: 40px;
+    height: 40px;
+  }
+
+  .split-line-row > .split-debit {
+    grid-column: 1 / 2;
+    grid-row: 2;
+  }
+
+  .split-line-row > .split-credit {
+    grid-column: 2 / 4;
+    grid-row: 2;
   }
 
   .umkm-actions-row {

@@ -285,8 +285,39 @@
     display: none;
   }
 
+  .topbar-left {
+    gap: 8px;
+  }
+
+  .topbar-title {
+    font-size: 14.5px;
+  }
+
   .topbar-actions {
-    gap: 6px;
+    gap: 4px;
+  }
+
+  .topbar-actions .btn-sm {
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  .topbar-actions .icon-btn {
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  .theme-switch {
+    height: 32px;
+    padding: 2px;
+  }
+
+  .theme-opt {
+    height: 26px;
+    padding: 0 7px;
   }
 
   .guide-drawer {

@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="theme-color" content="#f6f3eb" />
   <title>NeracaSederhana — Akuntansi &amp; Laporan Keuangan UMKM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,9 +14,9 @@
     href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./styles/tokens.css" />
-  <link rel="stylesheet" href="./styles/layout.css" />
-  <link rel="stylesheet" href="./styles/components.css" />
+  <link rel="stylesheet" href="./styles/tokens.css?v=20261126-6" />
+  <link rel="stylesheet" href="./styles/layout.css?v=20261126-6" />
+  <link rel="stylesheet" href="./styles/components.css?v=20261126-6" />
   <style>:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }</style>
 </head>
 <body>
@@ -166,7 +169,7 @@
   <dialog id="journal-dialog" class="ledger-dialog" aria-labelledby="jrn-dialog-title">
     <form id="journal-form" method="dialog" novalidate>
       <div class="dialog-head">
-        <h3 id="jrn-dialog-title">Catat Transaksi UMKM (Debit = Kredit)</h3>
+        <h3 id="jrn-dialog-title">Catat Transaksi UMKM</h3>
         <button type="button" id="jrn-close-btn" class="icon-btn" aria-label="Tutup dialog transaksi">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -312,6 +315,6 @@
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/main.js?v=20261126-6"></script>
 </body>
 </html>
