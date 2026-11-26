@@ -1,6 +1,5 @@
 import { initAtmosphere } from './atmosphere.js';
 import { DEFAULT_CUSTOM_BUSINESS } from './data/bab6Data.js';
-import { MICROTASKS_LIST } from './data/blueprintData.js';
 import {
   DEFAULT_UMKM_STATE,
   nextJournalId,
@@ -9,49 +8,38 @@ import {
   UMKM_QUICK_PRESETS,
   validateJournalEntry,
 } from './engine/journalEngine.js';
-import { renderBlueprintView } from './views/blueprintView.js';
 import { renderBuilderView } from './views/builderView.js';
 import { renderCaseStudyView } from './views/caseStudyView.js';
-import { renderMicrotasksView } from './views/microtasksView.js';
 import { renderOverviewView } from './views/overviewView.js';
 import { renderStatementsView } from './views/statementsView.js';
 import { renderUmkmLedgerView } from './views/umkmLedgerView.js';
 
-const STORAGE_KEY = 'neraca-bab6-state-v2';
+const STORAGE_KEY = 'neraca-umkm-state-v2';
 
 const VIEW_META = {
   umkm: {
-    title: 'Pembukuan UMKM (Debit = Kredit)',
-    subtitle: 'Jurnal Umum, Laba Rugi, Neraca & Arus Kas Selalu Seimbang',
+    title: 'Pembukuan UMKM',
+    subtitle: 'Jurnal Umum Debit = Kredit, Laba Rugi, Neraca & Arus Kas',
   },
   overview: {
-    title: 'Ringkasan & Materi Bab 6',
-    subtitle: 'Hakikat Laporan Keuangan & Analisis Rasio Sederhana',
+    title: 'Ringkasan Usaha',
+    subtitle: 'Ikhtisar Kinerja Keuangan & Struktur Pembukuan Bisnis',
   },
   statements: {
-    title: 'Laporan Keuangan (Tabel 6.1–6.5)',
-    subtitle: 'Laba Rugi Single/Multiple Step, Perubahan Ekuitas & Neraca',
+    title: 'Contoh Laporan Baku',
+    subtitle: 'Format Laba Rugi, Perubahan Ekuitas & Neraca Standar',
   },
   casestudy: {
-    title: 'Studi Kasus PT ABC & 10 Rasio',
-    subtitle: 'Komparatif 2022–2023 (Dalam Jutaan) & Rasio Likuiditas, Solvabilitas, Rentabilitas',
+    title: 'Analisis Rasio Bisnis',
+    subtitle: 'Perbandingan Laporan Tahunan & Rasio Likuiditas, Solvabilitas, Rentabilitas',
   },
   builder: {
-    title: 'Input Usaha Mandiri & Ekspor Excel',
-    subtitle: 'Kalkulator Neraca Seimbang Otomatis & Unduh .xlsx Berumus',
-  },
-  blueprint: {
-    title: 'Blueprint Arsitektur Sistem',
-    subtitle: 'Struktur Data Akuntansi, 9 Sheet Excel & Kontrak Design Kit',
-  },
-  microtasks: {
-    title: 'Microtasks Board (24 Paket Kerja)',
-    subtitle: 'Pemecahan Aplikasi & Excel Menjadi Tugas Atomik Terukur',
+    title: 'Kalkulator Neraca Cepat',
+    subtitle: 'Susun Posisi Keuangan Usaha & Unduh Laporan Excel',
   },
 };
 
 function loadInitialState() {
-  const defaultCompleted = MICROTASKS_LIST.filter((m) => m.defaultDone).map((m) => m.id);
   const base = {
     view: 'umkm',
     theme: 'light',
@@ -62,9 +50,6 @@ function loadInitialState() {
     calcMode: 'actual',
     statementQuery: '',
     ratioCategory: 'Semua',
-    microtaskEpic: 'Semua',
-    microtaskQuery: '',
-    completedMicrotasks: defaultCompleted,
     customBusiness: structuredClone(DEFAULT_CUSTOM_BUSINESS),
     pendingResetTarget: 'custom',
   };
@@ -74,12 +59,13 @@ function loadInitialState() {
     if (!saved) return base;
     const parsed = JSON.parse(saved);
     const restoredUmkm = parsed.umkmState ? sanitizeUmkmState(parsed.umkmState) : null;
+    const validView = VIEW_META[parsed.view] ? parsed.view : base.view;
     return {
       ...base,
       ...parsed,
+      view: validView,
       umkmState: restoredUmkm?.ok ? restoredUmkm.state : base.umkmState,
       customBusiness: parsed.customBusiness || base.customBusiness,
-      completedMicrotasks: parsed.completedMicrotasks || base.completedMicrotasks,
     };
   } catch {
     return base;
@@ -98,6 +84,10 @@ function persistState() {
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', theme === 'dark' ? '#131614' : '#f6f3eb');
+  }
   const sun = document.getElementById('theme-icon-sun');
   const moon = document.getElementById('theme-icon-moon');
   if (sun && moon) {
@@ -209,12 +199,6 @@ function render() {
         },
         onToast: showToast,
       });
-      break;
-    case 'blueprint':
-      renderBlueprintView(main);
-      break;
-    case 'microtasks':
-      renderMicrotasksView(main, state, { onStateChange: patchState });
       break;
     default:
       renderUmkmLedgerView(main, state, {

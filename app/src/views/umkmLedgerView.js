@@ -346,7 +346,7 @@ export function renderUmkmLedgerView(
         </span>
         <button type="button" id="umkm-export-xlsx" class="btn btn-primary btn-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Ekspor .xlsx (4 Sheet)
+          Unduh Laporan Excel
         </button>
       </div>
     </section>
@@ -361,10 +361,10 @@ export function renderUmkmLedgerView(
           <label for="umkm-period">Periode Pembukuan</label>
           <input id="umkm-period" type="text" value="${esc(umkm.periodLabel)}" placeholder="Contoh: November 2026" />
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-          <button type="button" id="umkm-backup-json" class="btn btn-secondary btn-sm">Cadangkan JSON</button>
+        <div class="umkm-actions-row">
+          <button type="button" id="umkm-backup-json" class="btn btn-secondary btn-sm">Simpan Cadangan</button>
           <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
-            Pulihkan JSON
+            Muat Cadangan
             <input id="umkm-restore-json" type="file" accept="application/json,.json" hidden />
           </label>
           <button type="button" id="umkm-reset-btn" class="btn btn-ghost btn-sm">Reset Contoh</button>

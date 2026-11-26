@@ -55,22 +55,22 @@ export function renderOverviewView(container, { onNavigate }) {
 
     <section class="kpi-grid" aria-label="Ikhtisar metrik Bab 6">
       <article class="kpi-card">
-        <span class="kpi-label">Toko Rambak Maju — Laba Bersih</span>
+        <span class="kpi-label">Laba Bersih (Rambak Maju)</span>
         <span class="kpi-value">${formatRp(ss.netIncome)}</span>
         <span class="kpi-meta">Single Step aktual (cetakan buku: Rp9.495.000)</span>
       </article>
       <article class="kpi-card">
-        <span class="kpi-label">Laundry Resik — Ekuitas Akhir</span>
+        <span class="kpi-label">Ekuitas Akhir (Laundry Resik)</span>
         <span class="kpi-value">${formatRp(eqSole.endingCapital)}</span>
         <span class="kpi-meta">Usaha perorangan per 31 Des 2023</span>
       </article>
       <article class="kpi-card">
-        <span class="kpi-label">PT ABC — Laba Bersih 2023</span>
+        <span class="kpi-label">Laba Bersih 2023 (PT ABC)</span>
         <span class="kpi-value">${formatRp(abc.y2023.eat, { unitScale: 1_000_000 })}</span>
         <span class="kpi-meta">Tumbuh +147,4% dari Rp380 jt (2022)</span>
       </article>
       <article class="kpi-card">
-        <span class="kpi-label">PT ABC — Rasio Lancar 2023</span>
+        <span class="kpi-label">Rasio Lancar 2023 (PT ABC)</span>
         <span class="kpi-value">${formatPct(curRatio23)}</span>
         <span class="kpi-meta">Aset tidak tetap menutup utang jangka pendek</span>
       </article>
