@@ -68,22 +68,22 @@ function buildFxPalette(bridge) {
     isLight,
     bg,
     accent,
-    sunCore: bridge.rgba(isLight ? surface : bridge.mix(text, sec, 0.20), isLight ? 0.94 : 0.96),
-    sunHalo1: bridge.rgba(isLight ? surface : bridge.mix(surface, sec, 0.35), isLight ? 0.42 : 0.28),
-    sunHalo2: bridge.rgba(isLight ? surface : sec, isLight ? 0.18 : 0.14),
-    moonCutout: bridge.rgba(bridge.mix(inset, accent, 0.10), 0.94),
-    starBright: bridge.rgba(bridge.mix(text, sec, 0.20), 0.95),
-    starMid: bridge.rgba(bridge.mix(text, muted, 0.30), 0.68),
-    starDim: bridge.rgba(muted, 0.42),
-    bird: bridge.rgba(bridge.mix(text, sec, 0.22), 0.68),
-    smoke: bridge.rgba(surface, isLight ? 0.42 : 0.22),
-    petalA: bridge.rgba(surface, 0.78),
-    petalB: bridge.rgba(bridge.mix(surface, sec, 0.38), 0.72),
-    waterGlint: bridge.rgba(isLight ? bridge.mix(surface, sec, 0.20) : bridge.mix(sec, text, 0.35), isLight ? 0.72 : 0.76),
-    fireflyCore: bridge.rgba(bridge.mix(sec, text, 0.45), 0.98),
-    fireflyMid: bridge.rgba(sec, 0.48),
-    fireflyHalo: bridge.rgba(sec, 0.20),
-    cloudWisp: bridge.rgba(surface, isLight ? 0.26 : 0.08),
+    sunCore: bridge.rgba(isLight ? surface : bridge.mix(text, sec, 0.18), isLight ? 0.56 : 0.65),
+    sunHalo1: bridge.rgba(isLight ? surface : bridge.mix(surface, sec, 0.30), isLight ? 0.24 : 0.18),
+    sunHalo2: bridge.rgba(isLight ? surface : sec, isLight ? 0.11 : 0.09),
+    moonCutout: bridge.rgba(bridge.mix(inset, accent, 0.08), 0.85),
+    starBright: bridge.rgba(bridge.mix(text, sec, 0.16), 0.62),
+    starMid: bridge.rgba(bridge.mix(text, muted, 0.35), 0.42),
+    starDim: bridge.rgba(muted, 0.24),
+    bird: bridge.rgba(bridge.mix(text, muted, 0.45), 0.44),
+    smoke: bridge.rgba(surface, isLight ? 0.28 : 0.14),
+    petalA: bridge.rgba(surface, 0.46),
+    petalB: bridge.rgba(bridge.mix(surface, sec, 0.28), 0.38),
+    waterGlint: bridge.rgba(isLight ? surface : bridge.mix(sec, text, 0.30), isLight ? 0.44 : 0.48),
+    fireflyCore: bridge.rgba(bridge.mix(sec, text, 0.36), 0.72),
+    fireflyMid: bridge.rgba(sec, 0.28),
+    fireflyHalo: bridge.rgba(sec, 0.10),
+    cloudWisp: bridge.rgba(surface, isLight ? 0.16 : 0.05),
   };
 }
 
@@ -175,102 +175,69 @@ function drawShootingStar(ctx, vw, startY, spanY, pal, phase, cycleLen) {
 
 function drawSidebarOverlay(vCtx, vw, vh, pal, phase) {
   if (pal.isLight) {
-    // 1. Subtle breathing luminous morning sun shimmer right on the illustrated sun
-    const sunX = Math.round(vw * 0.72);
-    const sunY = Math.round(vh * 0.60);
-    const pulse = Math.round(Math.sin(phase * 1.1) * 1.2);
-    drawSteppedCircle(vCtx, sunX, sunY, 9 + pulse, pal.sunHalo2);
-    drawSteppedCircle(vCtx, sunX, sunY, 5 + Math.max(0, pulse), pal.sunHalo1);
-
-    // 2. Gentle drifting sunlit cloud wisps across upper visible sky
-    const cw1 = ((phase * 2.1) % (vw + 36)) - 22;
-    px(vCtx, cw1, Math.round(vh * 0.44), 18, 2, pal.cloudWisp);
-    px(vCtx, cw1 + 4, Math.round(vh * 0.44) - 1, 10, 1, pal.cloudWisp);
-
-    // 3. Flapping V-flock of pixel birds gliding across the sky above the peaks
-    for (let b = 0; b < 4; b++) {
-      const bx = ((phase * (5.2 + b * 0.45) + b * 24) % (vw + 28)) - 14;
-      const by = Math.round(vh * 0.43) + (b % 3) * 5 + Math.round(Math.sin(phase * 2.2 + b) * 1.3);
-      const wingUp = Math.floor(phase * 4.2 + b) % 2 === 0;
+    // 1. Calm V-flock of tiny pixel birds drifting slowly across open sky above peaks
+    for (let b = 0; b < 3; b++) {
+      const bx = ((phase * (3.6 + b * 0.35) + b * 28) % (vw + 28)) - 14;
+      const by = Math.round(vh * 0.44) + (b % 3) * 5 + Math.round(Math.sin(phase * 1.8 + b) * 1.1);
+      const wingUp = Math.floor(phase * 3.4 + b) % 2 === 0;
       drawBird(vCtx, bx, by, wingUp, pal);
     }
 
-    // 4. Lazy rising chimney smoke wisps from the cozy village roofs
-    for (let s = 0; s < 3; s++) {
-      const life = (phase * 0.38 + s * 0.33) % 1;
-      const sx = Math.round(vw * 0.16 + Math.sin(phase + s * 2) * 2 + life * 4);
-      const sy = Math.round(vh * 0.72 - life * 14);
-      px(vCtx, sx, sy, life > 0.55 ? 2 : 1, 1, pal.smoke);
+    // 2. Lazy rising chimney smoke wisps from cozy village roofs
+    for (let s = 0; s < 2; s++) {
+      const life = (phase * 0.28 + s * 0.5) % 1;
+      const sx = Math.round(vw * 0.16 + Math.sin(phase * 0.8 + s * 2) * 1.8 + life * 3);
+      const sy = Math.round(vh * 0.72 - life * 12);
+      px(vCtx, sx, sy, 1, 1, pal.smoke);
     }
 
-    // 5. Sparkling animated water glints on the canal beneath the stone arch bridge
-    for (let g = 0; g < 6; g++) {
-      if (Math.sin(phase * 3.1 + g * 2.3) > 0.1) {
-        const gx = Math.round(vw * 0.58 + ((g * 11) % Math.max(12, Math.floor(vw * 0.26))));
-        const gy = Math.round(vh * 0.87 + g * 2.5);
-        px(vCtx, gx, gy, 3 + (g % 2), 1, pal.waterGlint);
+    // 3. Soft shimmering water glints on the canal beneath the stone arch bridge
+    for (let g = 0; g < 4; g++) {
+      if (Math.sin(phase * 2.2 + g * 2.5) > 0.2) {
+        const gx = Math.round(vw * 0.60 + ((g * 13) % Math.max(12, Math.floor(vw * 0.22))));
+        const gy = Math.round(vh * 0.87 + g * 3);
+        px(vCtx, gx, gy, 3, 1, pal.waterGlint);
       }
     }
 
-    // 6. Floating sunlit dust/petals across village & hills
-    drawSunlitMotes(vCtx, vw, Math.round(vh * 0.42), Math.round(vh * 0.90), pal, phase, 11);
+    // 4. Whisper-light sunlit motes drifting slowly over valley
+    drawSunlitMotes(vCtx, vw, Math.round(vh * 0.45), Math.round(vh * 0.88), pal, phase * 0.7, 6);
   } else {
-    // 1. Twinkling 4-point pixel stars across the extended midnight sky
-    drawTwinklingStars(vCtx, vw, Math.round(vh * 0.04), Math.round(vh * 0.52), pal, phase, 26);
+    // 1. Subtle twinkling pixel stars strictly below the menu zone
+    drawTwinklingStars(vCtx, vw, Math.round(vh * 0.38), Math.round(vh * 0.56), pal, phase * 0.8, 14);
 
-    // 2. Periodic shooting star streaking across the open night sky
-    drawShootingStar(vCtx, vw, Math.round(vh * 0.38), Math.round(vh * 0.10), pal, phase, 7.2);
+    // 2. Occasional calm shooting star
+    drawShootingStar(vCtx, vw, Math.round(vh * 0.40), Math.round(vh * 0.08), pal, phase, 11.5);
 
-    // 3. Shimmering golden lantern reflections on the dark canal water under the bridge
-    for (let g = 0; g < 6; g++) {
-      if (Math.sin(phase * 2.6 + g * 1.9) > 0.05) {
-        const gx = Math.round(vw * 0.62 + ((g * 9) % Math.max(12, Math.floor(vw * 0.24))));
-        const gy = Math.round(vh * 0.89 + g * 2.2);
-        px(vCtx, gx, gy, 3 + (g % 2), 1, pal.waterGlint);
+    // 3. Soft lantern reflections on the dark canal water
+    for (let g = 0; g < 4; g++) {
+      if (Math.sin(phase * 1.9 + g * 2.1) > 0.2) {
+        const gx = Math.round(vw * 0.62 + ((g * 11) % Math.max(12, Math.floor(vw * 0.20))));
+        const gy = Math.round(vh * 0.89 + g * 2.5);
+        px(vCtx, gx, gy, 2, 1, pal.waterGlint);
       }
     }
 
-    // 4. Glowing golden-amber fireflies (kunang-kunang) bobbing over forest & village
-    drawFireflies(vCtx, vw, Math.round(vh * 0.54), Math.round(vh * 0.92), pal, phase, 16);
+    // 4. Gentle golden-amber fireflies (kunang-kunang) bobbing calmly among trees & village
+    drawFireflies(vCtx, vw, Math.round(vh * 0.58), Math.round(vh * 0.90), pal, phase * 0.75, 9);
   }
 }
 
 function drawTopbarOverlay(vCtx, vw, vh, pal, phase) {
-  // Position celestial highlight inside the clear center scenic gap between title & actions
-  const celX = Math.round(vw * 0.55);
-  const celY = Math.max(7, Math.round(vh * 0.30));
-
   if (pal.isLight) {
-    // 1. Single gentle glowing pixel sun in the open panoramic sky gap
-    const pulse = Math.round(Math.sin(phase * 1.2) * 0.8);
-    drawSteppedCircle(vCtx, celX, celY, 8 + pulse, pal.sunHalo2);
-    drawSteppedCircle(vCtx, celX, celY, 5, pal.sunHalo1);
-    drawSteppedCircle(vCtx, celX, celY, 3, pal.sunCore);
-
-    // 2. Flapping pixel birds gliding left-to-right across the mountain horizon
-    const birdCount = Math.max(3, Math.min(6, Math.floor(vw / 95)));
+    // Calm peripheral birds & sunlit motes — never competing with header typography
+    const birdCount = Math.max(2, Math.min(4, Math.floor(vw / 160)));
     for (let b = 0; b < birdCount; b++) {
-      const bx = ((phase * (6.2 + b * 0.9) + b * 74) % (vw + 24)) - 12;
-      const by = 4 + (b % 3) * 4 + Math.round(Math.sin(phase * 2.4 + b) * 1.3);
-      const wingUp = Math.floor(phase * 4.4 + b) % 2 === 0;
+      const bx = ((phase * (4.2 + b * 0.6) + b * 96) % (vw + 24)) - 12;
+      const by = 5 + (b % 2) * 5 + Math.round(Math.sin(phase * 1.9 + b) * 1.1);
+      const wingUp = Math.floor(phase * 3.5 + b) % 2 === 0;
       drawBird(vCtx, bx, by, wingUp, pal);
     }
-
-    // 3. Drifting sunlit petals / golden motes
-    drawSunlitMotes(vCtx, vw, 3, Math.max(12, vh - 4), pal, phase, Math.max(8, Math.floor(vw / 52)));
+    drawSunlitMotes(vCtx, vw, 4, Math.max(12, vh - 4), pal, phase * 0.65, Math.max(4, Math.floor(vw / 90)));
   } else {
-    // 1. Single luminous crescent moon in the open center gap
-    drawSteppedCircle(vCtx, celX, celY, 8, pal.sunHalo2);
-    drawSteppedCircle(vCtx, celX, celY, 5, pal.sunHalo1);
-    drawSteppedCircle(vCtx, celX, celY, 3, pal.sunCore);
-    drawSteppedCircle(vCtx, celX + 2, celY - 1, 2, pal.moonCutout);
-
-    // 2. Twinkling stars + periodic shooting star across the midnight header sky
-    drawTwinklingStars(vCtx, vw, 2, Math.max(10, Math.floor(vh * 0.58)), pal, phase, Math.max(18, Math.floor(vw / 22)));
-    drawShootingStar(vCtx, vw, 3, Math.max(8, Math.floor(vh * 0.34)), pal, phase + 2.5, 6.8);
-
-    // 3. Bobbing golden fireflies (kunang-kunang) over the illuminated rooftops & pines
-    drawFireflies(vCtx, vw, Math.floor(vh * 0.36), Math.max(14, vh - 3), pal, phase, Math.max(10, Math.floor(vw / 42)));
+    // Whisper-quiet twinkling stars & gentle fireflies along the night treeline
+    drawTwinklingStars(vCtx, vw, 2, Math.max(10, Math.floor(vh * 0.56)), pal, phase * 0.75, Math.max(10, Math.floor(vw / 44)));
+    drawFireflies(vCtx, vw, Math.floor(vh * 0.44), Math.max(14, vh - 3), pal, phase * 0.7, Math.max(5, Math.floor(vw / 80)));
   }
 }
 
