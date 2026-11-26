@@ -11,12 +11,12 @@
   --bg-elevated: #ffffff;
   --bg-inset: #ebe6da;
   --bg-input: #f1ede3;
-  --nav-scrim: rgba(246, 243, 235, 0.72);
-  --nav-scrim-strong: rgba(251, 249, 244, 0.92);
-  --atmo-veil-top: rgba(246, 243, 235, 0.90);
-  --atmo-veil-mid: rgba(246, 243, 235, 0.34);
-  --atmo-veil-low: rgba(246, 243, 235, 0.24);
-  --atmo-veil-bar: rgba(246, 243, 235, 0.62);
+  --nav-scrim: rgba(246, 243, 235, 0.76);
+  --nav-scrim-strong: rgba(251, 249, 244, 0.94);
+  --atmo-veil-top: rgba(246, 243, 235, 0.94);
+  --atmo-veil-mid: rgba(246, 243, 235, 0.48);
+  --atmo-veil-low: rgba(246, 243, 235, 0.36);
+  --atmo-veil-bar: rgba(246, 243, 235, 0.72);
 
   --text-primary: #181b19;
   --text-secondary: #3f4641;
@@ -60,12 +60,12 @@
   --bg-elevated: #222723;
   --bg-inset: #101311;
   --bg-input: #141815;
-  --nav-scrim: rgba(19, 22, 20, 0.70);
-  --nav-scrim-strong: rgba(26, 30, 27, 0.90);
-  --atmo-veil-top: rgba(19, 22, 20, 0.88);
-  --atmo-veil-mid: rgba(19, 22, 20, 0.38);
-  --atmo-veil-low: rgba(19, 22, 20, 0.28);
-  --atmo-veil-bar: rgba(19, 22, 20, 0.58);
+  --nav-scrim: rgba(19, 22, 20, 0.74);
+  --nav-scrim-strong: rgba(26, 30, 27, 0.92);
+  --atmo-veil-top: rgba(19, 22, 20, 0.92);
+  --atmo-veil-mid: rgba(19, 22, 20, 0.46);
+  --atmo-veil-low: rgba(19, 22, 20, 0.36);
+  --atmo-veil-bar: rgba(19, 22, 20, 0.66);
 
   --text-primary: #eceae2;
   --text-secondary: #c4c8c0;
