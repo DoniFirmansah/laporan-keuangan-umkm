@@ -867,6 +867,56 @@ dialog.ledger-dialog::backdrop {
   border-radius: var(--radius-md);
 }
 
+/* SVG Visualization Containers */
+.viz-box {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-base);
+}
+
+.viz-ring-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-base);
+  margin-bottom: 14px;
+}
+
+.viz-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.viz-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.viz-legend-row > span:nth-child(2) {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.viz-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 /* Mobile-First Journal Cards (Hidden on Desktop, Shown <= 680px) */
 .jrn-mobile-list {
   display: none;

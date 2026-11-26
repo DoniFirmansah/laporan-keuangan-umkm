@@ -42,9 +42,17 @@
 .brand-block {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 6px 18px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 4px 16px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand-inner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
 }
 
 .brand-mark {
@@ -215,7 +223,7 @@
 }
 
 .mobile-only {
-  display: none;
+  display: none !important;
 }
 
 .sidebar-backdrop {
@@ -235,7 +243,7 @@
   }
 
   .mobile-only {
-    display: inline-grid;
+    display: inline-grid !important;
   }
 
   .sidebar {

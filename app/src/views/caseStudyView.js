@@ -6,6 +6,7 @@ import {
   formatRp,
   formatTimes,
 } from '../engine/accounting.js';
+import { renderRatioDumbbellSvg } from './charts.js';
 
 export function renderCaseStudyView(container, state, { onStateChange }) {
   const summary = computePtAbcSummary(PT_ABC_CASE);
@@ -76,6 +77,10 @@ export function renderCaseStudyView(container, state, { onStateChange }) {
             )
             .join('')}
         </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        ${renderRatioDumbbellSvg(ratios22, ratios23)}
       </div>
 
       <div class="grid-cards">

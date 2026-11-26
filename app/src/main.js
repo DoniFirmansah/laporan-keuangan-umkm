@@ -139,6 +139,7 @@ function closeMobileSidebar() {
 }
 
 function openMobileSidebar() {
+  if (window.innerWidth > 960) return;
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
   const menuBtn = document.getElementById('mobile-menu-btn');
@@ -445,6 +446,13 @@ function wireGlobalControls() {
   });
 
   document.getElementById('sidebar-backdrop')?.addEventListener('click', closeMobileSidebar);
+  document.getElementById('mobile-sidebar-close')?.addEventListener('click', closeMobileSidebar);
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 960) closeMobileSidebar();
+  }, { passive: true });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMobileSidebar();
+  });
 
   document.getElementById('theme-light-btn')?.addEventListener('click', () => {
     state.theme = 'light';

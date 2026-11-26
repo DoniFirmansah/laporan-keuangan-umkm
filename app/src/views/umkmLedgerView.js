@@ -8,6 +8,11 @@ import {
   UMKM_QUICK_PRESETS,
 } from '../engine/journalEngine.js';
 import { downloadCustomWorkbook } from '../engine/xlsxExporter.js';
+import {
+  renderBalanceScaleSvg,
+  renderCashFlowWaterfallSvg,
+  renderProfitCompositionRingSvg,
+} from './charts.js';
 
 function esc(str) {
   return String(str ?? '')
@@ -192,6 +197,23 @@ export function renderUmkmLedgerView(
     const eqRatio = bs.totalAssets > 0 ? (bs.endingEquity / bs.totalAssets) * 100 : 0;
 
     bodyHtml = `
+      <section class="panel" style="margin-bottom:0;">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title">Timbangan Keseimbangan Neraca (Aktiva = Pasiva)</h3>
+            <p class="panel-subtitle">Visualisasi struktur Aset terhadap Liabilitas &amp; Ekuitas usaha Anda</p>
+          </div>
+          <span class="badge ${bs.isBalanced ? 'badge-ok' : 'badge-err'}">${bs.isBalanced ? 'SEIMBANG' : 'SELISIH'}</span>
+        </div>
+        ${renderBalanceScaleSvg({
+          currentAssets: bs.totalCurrentAssets,
+          fixedAssets: bs.totalFixedAssets,
+          liabilities: bs.totalLiabilities,
+          equity: bs.endingEquity,
+          isBalanced: bs.isBalanced,
+        })}
+      </section>
+
       <div class="grid-split">
         <section class="panel">
           <div class="panel-header">
@@ -203,6 +225,12 @@ export function renderUmkmLedgerView(
               Margin ${netMargin.toFixed(1)}%
             </span>
           </div>
+          ${renderProfitCompositionRingSvg({
+            totalRevenue: is.totalRevenue,
+            cogs: is.cogs,
+            operatingExpenses: is.totalOperatingExpenses,
+            netIncome: is.netIncome,
+          })}
           <div class="table-wrap">
             <table class="ledger-table">
               <thead><tr><th>Kode</th><th>Pos Laba Rugi</th><th class="num">Nominal (Rp)</th></tr></thead>
@@ -316,14 +344,21 @@ export function renderUmkmLedgerView(
       <section class="panel">
         <div class="panel-header">
           <div>
-            <h3 class="panel-title">Ringkasan Komposisi Arus Kas</h3>
-            <p class="panel-subtitle">Proporsi kas masuk (+) dan kas keluar (-) berdasarkan 3 aktivitas utama</p>
+            <h3 class="panel-title">Jembatan Arus Kas (Cash-Flow Waterfall)</h3>
+            <p class="panel-subtitle">Perjalanan kas dari Saldo Awal hingga Saldo Kas Akhir per aktivitas</p>
           </div>
           <span class="badge ${cf.isCashReconciled ? 'badge-ok' : 'badge-err'}">
             ${cf.isCashReconciled ? 'SINKRON DENGAN KAS NERACA' : 'TIDAK SINKRON'}
           </span>
         </div>
-        <div class="meter-list">
+        ${renderCashFlowWaterfallSvg({
+          beginningCash: cf.beginningCash,
+          operatingCash: cf.operatingCash,
+          investingCash: cf.investingCash,
+          financingCash: cf.financingCash,
+          endingCash: cf.endingCash,
+        })}
+        <div class="meter-list" style="margin-top:14px;">
           ${cfBar('Aktivitas Operasi (Penjualan, Stok & Beban)', cf.operatingCash)}
           ${cfBar('Aktivitas Investasi (Peralatan & Aset Tetap)', cf.investingCash)}
           ${cfBar('Aktivitas Pendanaan (Modal, Prive & Pinjaman)', cf.financingCash)}
@@ -509,14 +544,14 @@ export function renderUmkmLedgerView(
           <label for="umkm-period">Periode Pembukuan</label>
           <input id="umkm-period" type="text" value="${esc(umkm.periodLabel)}" placeholder="Contoh: November 2026" />
         </div>
-        <div class="umkm-actions-row">
-          <button type="button" id="umkm-backup-json" class="btn btn-secondary btn-sm">Simpan Cadangan</button>
-          <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
-            Muat Cadangan
-            <input id="umkm-restore-json" type="file" accept="application/json,.json" hidden />
-          </label>
-          <button type="button" id="umkm-reset-btn" class="btn btn-ghost btn-sm">Reset Contoh</button>
-        </div>
+      </div>
+      <div class="umkm-actions-row" style="margin-top:12px;justify-content:flex-start;">
+        <button type="button" id="umkm-backup-json" class="btn btn-secondary btn-sm">Simpan Cadangan</button>
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+          Muat Cadangan
+          <input id="umkm-restore-json" type="file" accept="application/json,.json" hidden />
+        </label>
+        <button type="button" id="umkm-reset-btn" class="btn btn-ghost btn-sm">Reset Contoh</button>
       </div>
     </section>
 

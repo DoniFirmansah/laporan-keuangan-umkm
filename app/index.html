@@ -14,9 +14,9 @@
     href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./styles/tokens.css?v=20261126-6" />
-  <link rel="stylesheet" href="./styles/layout.css?v=20261126-6" />
-  <link rel="stylesheet" href="./styles/components.css?v=20261126-6" />
+  <link rel="stylesheet" href="./styles/tokens.css?v=20261126-7" />
+  <link rel="stylesheet" href="./styles/layout.css?v=20261126-7" />
+  <link rel="stylesheet" href="./styles/components.css?v=20261126-7" />
   <style>:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }</style>
 </head>
 <body>
@@ -27,17 +27,22 @@
   <div class="app-shell">
     <aside id="sidebar" class="sidebar" aria-label="Navigasi utama">
       <div class="brand-block">
-        <div class="brand-mark" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-            <path d="M8 7h8" />
-            <path d="M8 11h6" />
-          </svg>
+        <div class="brand-inner">
+          <div class="brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+              <path d="M8 7h8" />
+              <path d="M8 11h6" />
+            </svg>
+          </div>
+          <div>
+            <p class="brand-kicker">Akuntansi Bisnis UMKM</p>
+            <h1 class="brand-title">NeracaSederhana</h1>
+          </div>
         </div>
-        <div>
-          <p class="brand-kicker">Akuntansi Bisnis UMKM</p>
-          <h1 class="brand-title">NeracaSederhana</h1>
-        </div>
+        <button type="button" id="mobile-sidebar-close" class="icon-btn mobile-only" aria-label="Tutup menu navigasi">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
 
       <nav class="nav-list" aria-label="Menu utama aplikasi">
@@ -66,7 +71,7 @@
       <div class="sidebar-footer">
         <div class="source-pill">
           <span class="dot-ok" aria-hidden="true"></span>
-          <span>Pembukuan Seimbang &amp; Siap Ekspor</span>
+          <span>Neraca Seimbang &amp; Siap Ekspor</span>
         </div>
         <a
           class="btn btn-secondary btn-sm btn-block"
@@ -315,6 +320,6 @@
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script type="module" src="./src/main.js?v=20261126-6"></script>
+  <script type="module" src="./src/main.js?v=20261126-7"></script>
 </body>
 </html>

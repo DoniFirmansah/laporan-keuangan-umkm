@@ -13,6 +13,7 @@ import {
   formatPct,
   formatRp,
 } from '../engine/accounting.js';
+import { renderBalanceScaleSvg } from './charts.js';
 
 export function renderOverviewView(container, { onNavigate }) {
   const ss = computeSingleStep(TABLE_6_1_SINGLE_STEP, 'actual');
@@ -86,7 +87,7 @@ export function renderOverviewView(container, { onNavigate }) {
           </div>
           <button type="button" class="btn btn-secondary btn-sm" data-goto="statements">Lihat Contoh Laporan</button>
         </div>
-        <div class="meter-list">
+        <div class="meter-list" style="margin-bottom:14px;">
           <div class="meter-row">
             <div class="meter-head">
               <span>Aset Tidak Tetap (Lancar)</span>
@@ -109,6 +110,13 @@ export function renderOverviewView(container, { onNavigate }) {
             <div class="meter-track"><div class="meter-fill" style="width:${((nr.totalEquity / nr.totalAssets) * 100).toFixed(1)}%"></div></div>
           </div>
         </div>
+        ${renderBalanceScaleSvg({
+          currentAssets: nr.totalCurrentAssets,
+          fixedAssets: nr.totalFixedAssets,
+          liabilities: nr.totalLiabilities,
+          equity: nr.totalEquity,
+          isBalanced: nr.isBalanced,
+        })}
       </section>
 
       <section class="panel">
