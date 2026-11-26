@@ -14,9 +14,9 @@
     href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="./styles/tokens.css?v=20261126-7" />
-  <link rel="stylesheet" href="./styles/layout.css?v=20261126-7" />
-  <link rel="stylesheet" href="./styles/components.css?v=20261126-7" />
+  <link rel="stylesheet" href="./styles/tokens.css?v=20261126-9" />
+  <link rel="stylesheet" href="./styles/layout.css?v=20261126-9" />
+  <link rel="stylesheet" href="./styles/components.css?v=20261126-9" />
   <style>:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }</style>
 </head>
 <body>
@@ -26,6 +26,7 @@
 
   <div class="app-shell">
     <aside id="sidebar" class="sidebar" aria-label="Navigasi utama">
+      <canvas id="sidebar-pixel-canvas" class="nav-pixel-canvas" aria-hidden="true"></canvas>
       <div class="brand-block">
         <div class="brand-inner">
           <div class="brand-mark" aria-hidden="true">
@@ -88,6 +89,7 @@
 
     <div class="workspace">
       <header class="topbar">
+        <canvas id="topbar-pixel-canvas" class="nav-pixel-canvas" aria-hidden="true"></canvas>
         <div class="topbar-left">
           <button
             type="button"
@@ -320,6 +322,6 @@
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script type="module" src="./src/main.js?v=20261126-7"></script>
+  <script type="module" src="./src/main.js?v=20261126-9"></script>
 </body>
 </html>
