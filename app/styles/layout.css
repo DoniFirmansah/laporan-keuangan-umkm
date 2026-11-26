@@ -33,9 +33,6 @@
   height: 100%;
   z-index: 0;
   pointer-events: none;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
 }
 
 .sidebar {
@@ -339,7 +336,7 @@
   }
 
   .topbar-title {
-    font-size: 14px;
+    font-size: 13.5px;
   }
 
   .topbar-actions {

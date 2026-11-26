@@ -1,24 +1,10 @@
 /**
- * Tier 1-2 Wallpaper-Engine-Grade Pixel Botanical Greenhouse Engine
- * - Main workspace backdrop: Mode A static grain + soft daylight/lamp wash
- * - Sidebar & Full-Width Topbar: Multi-layer Integer-Scaled Pixel Greenhouse Footage
- *   - Layer 4: Bayer 4x4 dithered sky (Misty Morning / Moonlit Night) + moving pixel clouds / stars
- *   - Layer 3: Distant forest ridge silhouettes & diagonal Bayer-stepped sunbeams (god rays)
- *   - Layer 2: Victorian greenhouse mullions, arched rafters, wooden shelf, pines, monsteras, lantern
- *   - Layer 1: Gentle swaying hanging vines + floating pollen motes / fireflies (animated RAF)
- * - 100% token-locked via 1x1 sRGB Color Bridge; pauses on hidden/offscreen; static on reduced-motion
+ * High-DPI Smooth Botanical Conservatory & Komorebi Atmosphere Engine (Tier 1 Canvas 2D)
+ * - Full native DPR (<= 2) smooth anti-aliased rendering — zero chunky pixels, zero harsh lines
+ * - Multi-layer silky gradients, cubic-bezier botanical hills, curved ferns/vines, volumetric sunbeams & soft bokeh
+ * - Fills 100% of .sidebar and panoramic .topbar left-to-right while keeping UI text crisp & readable
+ * - 100% token-locked via 1x1 sRGB Color Bridge; pauses on hidden; static on prefers-reduced-motion
  */
-
-const BAYER_4X4 = [
-  0, 8, 2, 10,
-  12, 4, 14, 6,
-  3, 11, 1, 9,
-  15, 7, 13, 5,
-];
-
-function bayer(x, y) {
-  return (BAYER_4X4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
-}
 
 function createColorBridge() {
   const probeCanvas = document.createElement('canvas');
@@ -63,366 +49,264 @@ export function relativeLuminance(r, g, b) {
   return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
 }
 
-function prebakeCottonGrain(grainHost, bridge) {
-  if (!grainHost) return;
-  const size = 256;
-  const offscreen = document.createElement('canvas');
-  offscreen.width = size;
-  offscreen.height = size;
-  const ctx = offscreen.getContext('2d');
-  if (!ctx) return;
-
-  const ink = bridge.resolveRgb('--text-primary');
-  const img = ctx.createImageData(size, size);
-  const buf = img.data;
-
-  let seed = 1337;
-  for (let i = 0; i < buf.length; i += 4) {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    const shade = (seed >>> 24) & 0xff;
-    buf[i] = ink.r;
-    buf[i + 1] = ink.g;
-    buf[i + 2] = ink.b;
-    buf[i + 3] = shade > 128 ? 18 : 4;
-  }
-  ctx.putImageData(img, 0, 0);
-  grainHost.style.backgroundImage = `url(${offscreen.toDataURL('image/png')})`;
-}
-
-// Multi-tone botanical pixel sprites (L=mid leaf, H=highlight leaf, D=deep shadow, T=wood/pot, G=warm glow)
-const SPRITE_CYPRESS = [
-  '....H....',
-  '...HLL...',
-  '...LLD...',
-  '..HLLLD..',
-  '..LLLDD..',
-  '.HLLLLD..',
-  '.LLLLDDD.',
-  'HLLLLLDD.',
-  'LLLLLDDDD',
-  '.LLLDDDD.',
-  '...TTD...',
-  '...TTT...',
-];
-
-const SPRITE_MONSTERA = [
-  '.HH...HH.',
-  'HLLH.HLLH',
-  'LLLD.DLLL',
-  '.LLD.DLL.',
-  '..HD.DH..',
-  '...L.L...',
-  '..TTTTT..',
-  '..TTTTT..',
-  '...TTT...',
-];
-
-const SPRITE_LANTERN = [
-  '..DDD..',
-  '.DGGGD.',
-  '.DGGGD.',
-  '..DDD..',
-  '...T...',
-];
-
-const SPRITE_CLOUD = [
-  '....GGGGGG....',
-  '..GGGGGGGGGG..',
-  '.GGGGGGGGGGGG.',
-  'GGGGGGGGGGGGGG',
-];
-
-const SPRITE_CLOUD_SMALL = [
-  '..GGGGG..',
-  '.GGGGGGG.',
-  'GGGGGGGGG',
-];
-
-function drawSprite(vCtx, sprite, ox, oy, map) {
-  const rx = Math.round(ox);
-  const ry = Math.round(oy);
-  for (let r = 0; r < sprite.length; r++) {
-    const line = sprite[r];
-    for (let c = 0; c < line.length; c++) {
-      const ch = line[c];
-      if (ch === '.') continue;
-      const color = map[ch];
-      if (!color) continue;
-      vCtx.fillStyle = color;
-      vCtx.fillRect(rx + c, ry + r, 1, 1);
-    }
-  }
-}
-
-function drawHangingVine(vCtx, baseX, startY, len, swayOffset, pal) {
-  const bx = Math.round(baseX);
-  const sy = Math.round(startY);
-  for (let i = 0; i < len; i++) {
-    // Tip sways subtly in integer pixels
-    const shift = i > len * 0.55 ? Math.round(swayOffset) : 0;
-    const x = bx + shift;
-    const y = sy + i;
-    vCtx.fillStyle = pal.leafDeep;
-    vCtx.fillRect(x, y, 1, 1);
-    if (i % 3 === 1) {
-      const dir = i % 6 === 1 ? -1 : 1;
-      vCtx.fillStyle = pal.leafBright;
-      vCtx.fillRect(x + dir, y, 1, 1);
-      vCtx.fillStyle = pal.leafMid;
-      vCtx.fillRect(x + dir, y + 1, 1, 1);
-    }
-  }
-}
-
-function buildPalette(bridge) {
+function buildBotanicalPalette(bridge) {
   const bg = bridge.resolveRgb('--bg-base');
-  const inset = bridge.resolveRgb('--bg-inset');
+  const surface = bridge.resolveRgb('--bg-surface');
   const accent = bridge.resolveRgb('--accent-primary');
   const sec = bridge.resolveRgb('--accent-secondary');
   const text = bridge.resolveRgb('--text-primary');
   const muted = bridge.resolveRgb('--text-muted');
   const isLight = relativeLuminance(bg.r, bg.g, bg.b) > 0.179;
 
-  // Derived strictly from CSS tokens — cohesive archival botanical palette
-  const skyTop = isLight ? bridge.mix(bg, accent, 0.16) : bridge.mix(bg, accent, 0.12);
-  const skyMid = isLight ? bridge.mix(bg, accent, 0.08) : bridge.mix(bg, inset, 0.45);
-  const hillFar = bridge.rgba(bridge.mix(accent, muted, 0.35), isLight ? 0.22 : 0.28);
-  const hillNear = bridge.rgba(bridge.mix(accent, text, 0.15), isLight ? 0.30 : 0.34);
-
-  const leafBright = bridge.rgba(accent, isLight ? 0.62 : 0.58);
-  const leafMid = bridge.rgba(bridge.mix(accent, text, 0.18), isLight ? 0.54 : 0.46);
-  const leafDeep = bridge.rgba(bridge.mix(accent, text, 0.38), isLight ? 0.48 : 0.40);
-  const wood = bridge.rgba(bridge.mix(sec, text, 0.2), isLight ? 0.55 : 0.48);
-  const frameLine = bridge.rgba(bridge.mix(text, accent, 0.35), isLight ? 0.20 : 0.26);
-  const sunbeam = bridge.rgba(isLight ? bridge.mix(sec, bg, 0.25) : sec, isLight ? 0.20 : 0.18);
-  const glow = bridge.rgba(isLight ? bridge.mix(bg, sec, 0.18) : sec, isLight ? 0.65 : 0.72);
-  const cloudColor = bridge.rgba(isLight ? bridge.mix(bg, text, 0.06) : bridge.mix(accent, muted, 0.5), isLight ? 0.72 : 0.28);
-
   return {
     isLight,
-    skyTop: bridge.rgba(skyTop, 1),
-    skyMid: bridge.rgba(skyMid, 1),
-    hillFar,
-    hillNear,
-    leafBright,
-    leafMid,
-    leafDeep,
-    wood,
-    frameLine,
-    sunbeam,
-    glow,
-    cloudColor,
-    spriteMap: {
-      L: leafMid,
-      H: leafBright,
-      D: leafDeep,
-      T: wood,
-      G: glow,
-    },
-    cloudMap: {
-      G: cloudColor,
-    },
+    bg,
+    accent,
+    sec,
+    skyTop: bridge.rgba(bridge.mix(bg, accent, isLight ? 0.20 : 0.22), 1),
+    skyMid: bridge.rgba(bridge.mix(bg, accent, isLight ? 0.10 : 0.11), 1),
+    skyGlow: bridge.rgba(isLight ? bridge.mix(bg, sec, 0.24) : bridge.mix(accent, sec, 0.35), isLight ? 0.55 : 0.28),
+    mist: bridge.rgba(isLight ? surface : bridge.mix(bg, accent, 0.18), isLight ? 0.42 : 0.35),
+    ridgeFar: bridge.rgba(bridge.mix(accent, bg, isLight ? 0.62 : 0.70), 1),
+    ridgeMid: bridge.rgba(bridge.mix(accent, bg, isLight ? 0.45 : 0.54), 1),
+    ridgeNear: bridge.rgba(bridge.mix(accent, text, isLight ? 0.08 : 0.05), isLight ? 0.46 : 0.42),
+    leafSoft: bridge.rgba(accent, isLight ? 0.22 : 0.28),
+    leafRich: bridge.rgba(bridge.mix(accent, text, 0.12), isLight ? 0.36 : 0.38),
+    leafHighlight: bridge.rgba(bridge.mix(accent, sec, 0.35), isLight ? 0.30 : 0.34),
+    beamStart: bridge.rgba(isLight ? bridge.mix(surface, sec, 0.22) : sec, isLight ? 0.28 : 0.11),
+    beamEnd: bridge.rgba(bg, 0),
+    bokeh: bridge.rgba(isLight ? bridge.mix(surface, sec, 0.30) : sec, isLight ? 0.68 : 0.48),
+    orb: bridge.rgba(isLight ? bridge.mix(surface, sec, 0.15) : bridge.mix(sec, surface, 0.4), isLight ? 0.85 : 0.75),
+    inkMuted: bridge.rgba(muted, isLight ? 0.09 : 0.11),
   };
 }
 
-function drawSkyAndDistantForest(vCtx, vw, vh, pal, phase, isTopbar) {
-  // Layer 4: Bayer 4x4 dithered sky gradient
-  vCtx.fillStyle = pal.skyMid;
-  vCtx.fillRect(0, 0, vw, vh);
-
-  const skyBand = isTopbar ? vh : Math.floor(vh * 0.62);
-  for (let y = 0; y < skyBand; y++) {
-    const t = 1 - y / Math.max(1, skyBand);
-    for (let x = 0; x < vw; x++) {
-      if (t * 0.85 > bayer(x, y)) {
-        vCtx.fillStyle = pal.skyTop;
-        vCtx.fillRect(x, y, 1, 1);
-      }
-    }
+function drawSmoothHill(ctx, w, h, baseY, amp, freq, phaseShift, fill) {
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.lineTo(0, baseY);
+  const steps = Math.max(12, Math.ceil(w / 22));
+  let prevX = 0;
+  let prevY = baseY + Math.sin(phaseShift) * amp;
+  ctx.lineTo(prevX, prevY);
+  for (let i = 1; i <= steps; i++) {
+    const x = (i / steps) * w;
+    const y =
+      baseY +
+      Math.sin((i / steps) * Math.PI * freq + phaseShift) * amp +
+      Math.cos((i / steps) * Math.PI * (freq * 1.7) + phaseShift * 0.7) * (amp * 0.42);
+    const cx = (prevX + x) * 0.5;
+    const cy = (prevY + y) * 0.5;
+    ctx.quadraticCurveTo(prevX, prevY, cx, cy);
+    prevX = x;
+    prevY = y;
   }
+  ctx.lineTo(w, prevY);
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
 
-  // Sun / Moon & Drifting Clouds or Stars
-  if (pal.isLight) {
-    const c1x = ((phase * 4.2) % (vw + 24)) - 14;
-    const c2x = ((phase * 2.6 + vw * 0.52) % (vw + 24)) - 12;
-    drawSprite(vCtx, SPRITE_CLOUD, c1x, isTopbar ? 3 : 8, pal.cloudMap);
-    drawSprite(vCtx, SPRITE_CLOUD_SMALL, c2x, isTopbar ? 6 : 20, pal.cloudMap);
-  } else {
-    // Pixel crescent moon + calm twinkling stars
-    const moonX = Math.max(8, vw - 18);
-    const moonY = isTopbar ? 4 : 10;
-    vCtx.fillStyle = pal.glow;
-    vCtx.fillRect(moonX, moonY, 4, 4);
-    vCtx.fillStyle = pal.skyTop;
-    vCtx.fillRect(moonX + 2, moonY, 2, 2);
+function drawLeaf(ctx, x, y, len, wid, angle, fill) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(len * 0.35, -wid, len * 0.78, -wid * 0.65, len, 0);
+  ctx.bezierCurveTo(len * 0.78, wid * 0.65, len * 0.35, wid, 0, 0);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.restore();
+}
 
-    const starCount = isTopbar ? 12 : 16;
-    for (let i = 0; i < starCount; i++) {
-      const sx = (i * 37 + 11) % Math.max(12, vw - 4);
-      const sy = (i * 19 + 3) % Math.max(8, Math.floor(skyBand * 0.65));
-      const twinkle = ((Math.floor(phase * 1.4) + i) % 5) === 0;
-      vCtx.fillStyle = twinkle ? pal.glow : pal.cloudColor;
-      vCtx.fillRect(sx, sy, 1, 1);
-    }
-  }
+function drawBotanicalBranch(ctx, startX, startY, endX, endY, ctrlX, ctrlY, leafCount, leafScale, sway, pal) {
+  const tipX = endX + sway * 5;
+  const tipY = endY + Math.abs(sway) * 1.5;
 
-  // Layer 3: Distant forest ridge silhouette with Bayer mist
-  const horizonY = isTopbar ? vh - 5 : Math.floor(vh * 0.72);
-  for (let x = 0; x < vw; x++) {
-    const ridge1 = Math.round(Math.sin(x * 0.11) * 3 + Math.cos(x * 0.23) * 2);
-    const top1 = Math.max(2, horizonY - 5 - Math.abs(ridge1));
-    vCtx.fillStyle = pal.hillFar;
-    vCtx.fillRect(x, top1, 1, vh - top1);
+  // Soft curved stem (no harsh stroke lines — tapered silhouette)
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.quadraticCurveTo(ctrlX, ctrlY, tipX, tipY);
+  ctx.strokeStyle = pal.leafRich;
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+  ctx.stroke();
 
-    const ridge2 = Math.round(Math.sin(x * 0.19 + 1.4) * 2 + (x % 5 === 0 ? 2 : 0));
-    const top2 = Math.max(4, horizonY - Math.abs(ridge2));
-    vCtx.fillStyle = pal.hillNear;
-    vCtx.fillRect(x, top2, 1, vh - top2);
-  }
-
-  // Diagonal Bayer-dithered greenhouse god-rays (light mode) or warm lantern shafts
-  const rayCount = isTopbar ? 3 : 2;
-  for (let r = 0; r < rayCount; r++) {
-    const baseRx = Math.round(vw * (0.28 + r * 0.28) + Math.sin(phase * 0.25 + r) * 2);
-    for (let y = 0; y < vh; y++) {
-      const rx = baseRx - Math.floor(y * 0.45);
-      const halfW = isTopbar ? 5 : 7;
-      for (let dx = -halfW; dx <= halfW; dx++) {
-        const px = rx + dx;
-        if (px < 0 || px >= vw) continue;
-        const falloff = 1 - Math.abs(dx) / (halfW + 1);
-        if (falloff * 0.55 > bayer(px, y)) {
-          vCtx.fillStyle = pal.sunbeam;
-          vCtx.fillRect(px, y, 1, 1);
-        }
-      }
-    }
+  for (let i = 1; i <= leafCount; i++) {
+    const t = i / (leafCount + 0.5);
+    const mt = 1 - t;
+    const lx = mt * mt * startX + 2 * mt * t * ctrlX + t * t * tipX;
+    const ly = mt * mt * startY + 2 * mt * t * ctrlY + t * t * tipY;
+    const tx = 2 * mt * (ctrlX - startX) + 2 * t * (tipX - ctrlX);
+    const ty = 2 * mt * (ctrlY - startY) + 2 * t * (tipY - ctrlY);
+    const tangentAngle = Math.atan2(ty, tx);
+    const side = i % 2 === 0 ? 1 : -1;
+    const size = leafScale * (0.7 + 0.45 * Math.sin(t * Math.PI));
+    const fill = i % 3 === 0 ? pal.leafHighlight : i % 2 === 0 ? pal.leafRich : pal.leafSoft;
+    drawLeaf(ctx, lx, ly, size * 1.75, size * 0.58, tangentAngle + side * 0.68, fill);
   }
 }
 
-function drawTopbarFootage(vCtx, vw, vh, pal, phase) {
-  drawSkyAndDistantForest(vCtx, vw, vh, pal, phase, true);
+function drawVolumetricSunbeams(ctx, w, h, phase, pal) {
+  ctx.save();
+  const beamConfigs = [
+    { x: w * 0.22, width: Math.max(46, w * 0.14), drift: 0.4 },
+    { x: w * 0.58, width: Math.max(60, w * 0.18), drift: -0.3 },
+    { x: w * 0.86, width: Math.max(52, w * 0.16), drift: 0.25 },
+  ];
+  for (let i = 0; i < beamConfigs.length; i++) {
+    const b = beamConfigs[i];
+    const xTop = b.x + Math.sin(phase * 0.35 + i) * 14 * b.drift;
+    const xBot = xTop - h * 0.42;
+    const grad = ctx.createLinearGradient(xTop, 0, xBot, h);
+    grad.addColorStop(0, pal.beamStart);
+    grad.addColorStop(1, pal.beamEnd);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(xTop - b.width * 0.4, 0);
+    ctx.lineTo(xTop + b.width * 0.5, 0);
+    ctx.lineTo(xBot + b.width * 0.9, h);
+    ctx.lineTo(xBot - b.width * 0.6, h);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
-  // Layer 2: Panoramic Victorian greenhouse window mullions (left to right)
-  vCtx.fillStyle = pal.frameLine;
-  vCtx.fillRect(0, 0, vw, 1);
-  vCtx.fillRect(0, vh - 1, vw, 1);
-  const paneStep = Math.max(24, Math.floor(vw / 7));
-  for (let x = paneStep; x < vw - 8; x += paneStep) {
-    vCtx.fillRect(x, 0, 1, vh);
+function drawTopbarScene(ctx, w, h, pal, phase) {
+  // 1. Rich multi-stop sky gradient left-to-right
+  const sky = ctx.createLinearGradient(0, 0, w, h);
+  sky.addColorStop(0, pal.skyTop);
+  sky.addColorStop(0.52, pal.skyMid);
+  sky.addColorStop(1, pal.skyTop);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
+
+  // Soft sunlit / moonlit horizon bloom
+  const orbX = w * 0.78;
+  const orbY = h * 0.26;
+  const halo = ctx.createRadialGradient(orbX, orbY, 4, orbX, orbY, Math.max(120, w * 0.28));
+  halo.addColorStop(0, pal.skyGlow);
+  halo.addColorStop(1, pal.beamEnd);
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, w, h);
+
+  // Soft celestial orb in upper-right distance
+  ctx.beginPath();
+  ctx.arc(orbX, orbY, pal.isLight ? 14 : 11, 0, Math.PI * 2);
+  ctx.fillStyle = pal.orb;
+  ctx.fill();
+
+  // 2. Smooth layered rolling botanical hills spanning 100% width
+  drawSmoothHill(ctx, w, h, h * 0.66, 8, 2.6, 0.4, pal.ridgeFar);
+  drawSmoothHill(ctx, w, h, h * 0.78, 7, 3.4, 1.9, pal.ridgeMid);
+
+  // Subtle horizon mist gradient
+  const mist = ctx.createLinearGradient(0, h * 0.45, 0, h);
+  mist.addColorStop(0, pal.beamEnd);
+  mist.addColorStop(1, pal.mist);
+  ctx.fillStyle = mist;
+  ctx.fillRect(0, h * 0.45, w, h * 0.55);
+
+  drawSmoothHill(ctx, w, h, h * 0.88, 5, 4.2, 3.1, pal.ridgeNear);
+
+  // 3. Diagonal Komorebi sunbeams
+  drawVolumetricSunbeams(ctx, w, h, phase, pal);
+
+  // 4. Organic hanging canopy branches across header
+  const sway = Math.sin(phase * 0.8);
+  const branches = [
+    [w * 0.14, -4, w * 0.22, h * 0.58, w * 0.17, h * 0.34, 6, 8],
+    [w * 0.48, -4, w * 0.54, h * 0.62, w * 0.49, h * 0.36, 7, 8.5],
+    [w * 0.72, -4, w * 0.65, h * 0.56, w * 0.69, h * 0.32, 6, 8],
+    [w * 0.94, -4, w * 0.86, h * 0.66, w * 0.91, h * 0.38, 7, 9],
+  ];
+  for (let i = 0; i < branches.length; i++) {
+    const [sx, sy, ex, ey, cx, cy, cnt, sc] = branches[i];
+    drawBotanicalBranch(ctx, sx, sy, ex, ey, cx, cy, cnt, sc, sway * (i % 2 === 0 ? 1 : -0.8), pal);
   }
 
-  // Layer 1: Swaying hanging botanical vines & corner foliage across full header width
-  const sway = Math.sin(phase * 0.9);
-  const vineSpots = [0.06, 0.18, 0.34, 0.49, 0.63, 0.78, 0.91];
-  vineSpots.forEach((ratio, idx) => {
-    const vx = Math.round(vw * ratio);
-    const len = idx % 2 === 0 ? Math.min(11, vh - 4) : Math.min(7, vh - 6);
-    const localSway = sway * (idx % 2 === 0 ? 1 : -1);
-    drawHangingVine(vCtx, vx, 1, Math.max(4, len), localSway, pal);
-  });
-
-  // Grounded pixel cypresses & monstera silhouettes along bottom border of header
-  const cypressSpots = [0.12, 0.41, 0.72, 0.87];
-  for (const ratio of cypressSpots) {
-    const cx = Math.round(vw * ratio);
-    if (cx > 4 && cx < vw - 10) {
-      drawSprite(vCtx, SPRITE_CYPRESS, cx, vh - SPRITE_CYPRESS.length, pal.spriteMap);
-    }
-  }
-
-  // Ambient floating pollen / firefly particles across full width
-  const particleCount = Math.max(8, Math.floor(vw / 24));
-  for (let i = 0; i < particleCount; i++) {
-    const px = Math.round(((i * 41 + phase * (3 + (i % 3))) % vw));
-    const py = Math.round((i * 13 + Math.sin(phase * 1.1 + i) * 3 + vh) % Math.max(6, vh - 2));
-    vCtx.fillStyle = i % 2 === 0 ? pal.glow : pal.leafBright;
-    vCtx.fillRect(px, py, 1, 1);
+  // 5. Soft glowing bokeh motes
+  const moteCount = Math.max(8, Math.floor(w / 75));
+  for (let i = 0; i < moteCount; i++) {
+    const mx = ((i * 113 + phase * (7 + (i % 3) * 2)) % (w + 20)) - 10;
+    const my = h * 0.22 + ((i * 29) % (h * 0.62)) + Math.sin(phase * 0.9 + i) * 3;
+    const r = 1.6 + (i % 3) * 0.9;
+    const g = ctx.createRadialGradient(mx, my, 0, mx, my, r * 2.4);
+    g.addColorStop(0, pal.bokeh);
+    g.addColorStop(1, pal.beamEnd);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(mx, my, r * 2.4, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
-function drawSidebarFootage(vCtx, vw, vh, pal, phase) {
-  drawSkyAndDistantForest(vCtx, vw, vh, pal, phase, false);
+function drawSidebarScene(ctx, w, h, pal, phase) {
+  // 1. Rich full-height atmospheric gradient
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, pal.skyTop);
+  sky.addColorStop(0.42, pal.skyMid);
+  sky.addColorStop(0.74, pal.skyTop);
+  sky.addColorStop(1, pal.skyMid);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
 
-  // Layer 2: Greenhouse vertical mullions & arched top beam
-  vCtx.fillStyle = pal.frameLine;
-  vCtx.fillRect(0, 0, vw, 2);
-  vCtx.fillRect(0, 0, 1, vh);
-  vCtx.fillRect(vw - 1, 0, 1, vh);
-  vCtx.fillRect(Math.floor(vw * 0.5), 0, 1, Math.floor(vh * 0.75));
-  const shelfY = Math.max(48, vh - 36);
-  vCtx.fillRect(0, Math.floor(vh * 0.38), vw, 1);
+  // Warm upper conservatory bloom + celestial orb
+  const orbX = w * 0.76;
+  const orbY = h * 0.14;
+  const halo = ctx.createRadialGradient(orbX, orbY, 6, orbX, orbY, w * 0.95);
+  halo.addColorStop(0, pal.skyGlow);
+  halo.addColorStop(1, pal.beamEnd);
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, w, h);
 
-  // Conservatory wooden potting bench / garden terrace above bottom footer
-  vCtx.fillStyle = pal.wood;
-  vCtx.fillRect(2, shelfY, vw - 4, 2);
-  vCtx.fillStyle = pal.leafDeep;
-  vCtx.fillRect(2, shelfY - 1, vw - 4, 1);
+  ctx.beginPath();
+  ctx.arc(orbX, orbY, pal.isLight ? 16 : 13, 0, Math.PI * 2);
+  ctx.fillStyle = pal.orb;
+  ctx.fill();
 
-  // Lush pixel botanical collection along the conservatory shelf & mid-canopy
-  drawSprite(vCtx, SPRITE_CYPRESS, 5, shelfY - SPRITE_CYPRESS.length, pal.spriteMap);
-  if (vw >= 54) {
-    drawSprite(vCtx, SPRITE_MONSTERA, Math.floor(vw * 0.36), shelfY - SPRITE_MONSTERA.length, pal.spriteMap);
+  // 2. Full-height layered botanical hills filling the mid & lower sidebar (no empty void!)
+  drawSmoothHill(ctx, w, h, h * 0.52, 16, 1.8, 0.5, pal.ridgeFar);
+
+  // Atmospheric mid mist veil
+  const mistMid = ctx.createLinearGradient(0, h * 0.40, 0, h * 0.72);
+  mistMid.addColorStop(0, pal.beamEnd);
+  mistMid.addColorStop(0.5, pal.mist);
+  mistMid.addColorStop(1, pal.beamEnd);
+  ctx.fillStyle = mistMid;
+  ctx.fillRect(0, h * 0.40, w, h * 0.32);
+
+  drawSmoothHill(ctx, w, h, h * 0.64, 15, 2.2, 1.8, pal.ridgeMid);
+  drawSmoothHill(ctx, w, h, h * 0.76, 12, 2.6, 3.0, pal.ridgeNear);
+
+  // 3. Soft diagonal volumetric light beams
+  drawVolumetricSunbeams(ctx, w, h, phase, pal);
+
+  // 4. Lush organic botanical branches framing top, mid-right, and lower garden
+  const sway = Math.sin(phase * 0.75);
+  drawBotanicalBranch(ctx, w * 0.85, -6, w * 0.62, h * 0.22, w * 0.78, h * 0.12, 8, 9.5, sway, pal);
+  drawBotanicalBranch(ctx, -6, h * 0.36, w * 0.38, h * 0.48, w * 0.16, h * 0.40, 7, 10, -sway * 0.8, pal);
+  drawBotanicalBranch(ctx, w + 6, h * 0.54, w * 0.54, h * 0.66, w * 0.82, h * 0.58, 8, 10.5, sway * 0.9, pal);
+  drawBotanicalBranch(ctx, -6, h * 0.78, w * 0.44, h * 0.72, w * 0.18, h * 0.76, 7, 11, sway * 0.6, pal);
+  drawBotanicalBranch(ctx, w + 6, h * 0.84, w * 0.52, h * 0.79, w * 0.78, h * 0.82, 7, 11, -sway * 0.6, pal);
+
+  // 5. Soft floating sunlit bokeh / fireflies throughout full height
+  for (let i = 0; i < 16; i++) {
+    const mx = ((i * 47 + Math.sin(phase * 0.55 + i) * 14 + w) % (w - 12)) + 6;
+    const my = ((i * 59 + phase * (5 + (i % 3) * 2)) % (h - 24)) + 12;
+    const r = 1.8 + (i % 3) * 1.1;
+    const g = ctx.createRadialGradient(mx, my, 0, mx, my, r * 2.6);
+    g.addColorStop(0, pal.bokeh);
+    g.addColorStop(1, pal.beamEnd);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(mx, my, r * 2.6, 0, Math.PI * 2);
+    ctx.fill();
   }
-  if (vw >= 74) {
-    drawSprite(vCtx, SPRITE_CYPRESS, vw - 15, shelfY - SPRITE_CYPRESS.length, pal.spriteMap);
-  }
-
-  // Hanging lantern with Bayer-dithered warm glow halo in upper-right conservatory
-  const lanX = vw - 14;
-  const lanY = 14;
-  for (let dy = -6; dy <= 8; dy++) {
-    for (let dx = -6; dx <= 12; dx++) {
-      const dist = Math.hypot(dx - 3, dy - 2);
-      const strength = Math.max(0, 1 - dist / 8) * 0.55;
-      if (strength > bayer(lanX + dx, lanY + dy)) {
-        vCtx.fillStyle = pal.sunbeam;
-        vCtx.fillRect(lanX + dx, lanY + dy, 1, 1);
-      }
-    }
-  }
-  drawSprite(vCtx, SPRITE_LANTERN, lanX, lanY, pal.spriteMap);
-
-  // Layer 1: Swaying hanging vines from top beam
-  const sway = Math.sin(phase * 0.85);
-  drawHangingVine(vCtx, 7, 2, 16, sway, pal);
-  drawHangingVine(vCtx, Math.floor(vw * 0.32), 2, 11, -sway, pal);
-  drawHangingVine(vCtx, vw - 7, 2, 19, sway, pal);
-
-  // Floating sunlit motes / fireflies
-  for (let i = 0; i < 14; i++) {
-    const px = Math.round(((i * 23 + Math.sin(phase * 0.7 + i) * 5 + vw) % Math.max(8, vw - 4)) + 2);
-    const py = Math.round(((i * 31 + phase * 2.2) % Math.max(20, vh - 6)) + 3);
-    vCtx.fillStyle = i % 2 === 0 ? pal.glow : pal.leafBright;
-    vCtx.fillRect(px, py, 1, 1);
-  }
-}
-
-function blitStage(canvas, physW, physH, dpr, drawer) {
-  if (!canvas || physW <= 0 || physH <= 0) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  if (canvas.width !== physW || canvas.height !== physH) {
-    canvas.width = physW;
-    canvas.height = physH;
-  }
-
-  const intScale = Math.max(2, Math.round(2.5 * dpr));
-  const vw = Math.max(24, Math.ceil(physW / intScale));
-  const vh = Math.max(16, Math.ceil(physH / intScale));
-
-  const vCanvas = document.createElement('canvas');
-  vCanvas.width = vw;
-  vCanvas.height = vh;
-  const vCtx = vCanvas.getContext('2d');
-  if (!vCtx) return;
-
-  drawer(vCtx, vw, vh);
-
-  ctx.clearRect(0, 0, physW, physH);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(vCanvas, 0, 0, vw, vh, 0, 0, vw * intScale, vh * intScale);
 }
 
 export function initAtmosphere() {
@@ -434,14 +318,13 @@ export function initAtmosphere() {
   const topbarCanvas = document.getElementById('topbar-pixel-canvas');
 
   const bridge = createColorBridge();
-  prebakeCottonGrain(grainHost, bridge);
-
-  const stageSizes = new Map();
-  let palette = buildPalette(bridge);
+  let palette = buildBotanicalPalette(bridge);
   let phase = 0;
   let rafId = null;
   let lastTs = 0;
-  let accTime = 0;
+
+  // Keep grain ultra-subtle in background workspace only (zero grain on navbars)
+  if (grainHost) grainHost.style.opacity = '0.02';
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -458,60 +341,57 @@ export function initAtmosphere() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    const rootStyles = getComputedStyle(document.documentElement);
-    const safeLeft = parseFloat(rootStyles.getPropertyValue('--atmo-safe-left')) || 264;
-    const safeTop = parseFloat(rootStyles.getPropertyValue('--atmo-safe-top')) || 64;
-
-    const bg = bridge.resolveRgb('--bg-base');
-    const ink = bridge.resolveRgb('--text-muted');
-    const accent = bridge.resolveRgb('--accent-primary');
-    const isLight = relativeLuminance(bg.r, bg.g, bg.b) > 0.179;
-
-    const cx = width * 0.85;
-    const cy = Math.max(safeTop + 60, height * 0.18);
-    const rad = Math.max(width, height) * 0.52;
+    const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--atmo-safe-top')) || 64;
+    const cx = width * 0.84;
+    const cy = Math.max(safeTop + 70, height * 0.22);
+    const rad = Math.max(width, height) * 0.56;
     const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, rad);
-    grad.addColorStop(0, bridge.rgba(accent, isLight ? 0.06 : 0.09));
-    grad.addColorStop(0.55, bridge.rgba(accent, isLight ? 0.02 : 0.03));
-    grad.addColorStop(1, bridge.rgba(bg, 0));
+    grad.addColorStop(0, bridge.rgba(palette.accent, palette.isLight ? 0.06 : 0.09));
+    grad.addColorStop(0.55, bridge.rgba(palette.accent, palette.isLight ? 0.02 : 0.03));
+    grad.addColorStop(1, bridge.rgba(palette.bg, 0));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
-
-    const contentEdge = safeLeft + 1220;
-    if (width >= contentEdge + 56) {
-      const ruleX = width - 44;
-      ctx.strokeStyle = bridge.rgba(ink, isLight ? 0.10 : 0.12);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(ruleX, safeTop + 20);
-      ctx.lineTo(ruleX, height - 24);
-      ctx.moveTo(ruleX + 4, safeTop + 20);
-      ctx.lineTo(ruleX + 4, height - 24);
-      ctx.stroke();
-    }
   }
 
-  function renderNavFootage() {
-    const dpr = window.devicePixelRatio || 1;
+  function renderNavScenes() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     if (sidebarEl && sidebarCanvas) {
-      const sz = stageSizes.get(sidebarEl) || {
-        w: Math.round(sidebarEl.clientWidth * dpr),
-        h: Math.round(sidebarEl.clientHeight * dpr),
-      };
-      blitStage(sidebarCanvas, sz.w, sz.h, dpr, (vCtx, vw, vh) =>
-        drawSidebarFootage(vCtx, vw, vh, palette, phase)
-      );
+      const w = sidebarEl.clientWidth;
+      const h = sidebarEl.clientHeight;
+      if (w > 0 && h > 0) {
+        const pw = Math.floor(w * dpr);
+        const ph = Math.floor(h * dpr);
+        if (sidebarCanvas.width !== pw || sidebarCanvas.height !== ph) {
+          sidebarCanvas.width = pw;
+          sidebarCanvas.height = ph;
+        }
+        const ctx = sidebarCanvas.getContext('2d');
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, w, h);
+          drawSidebarScene(ctx, w, h, palette, phase);
+        }
+      }
     }
 
     if (topbarEl && topbarCanvas) {
-      const sz = stageSizes.get(topbarEl) || {
-        w: Math.round(topbarEl.clientWidth * dpr),
-        h: Math.round(topbarEl.clientHeight * dpr),
-      };
-      blitStage(topbarCanvas, sz.w, sz.h, dpr, (vCtx, vw, vh) =>
-        drawTopbarFootage(vCtx, vw, vh, palette, phase)
-      );
+      const w = topbarEl.clientWidth;
+      const h = topbarEl.clientHeight;
+      if (w > 0 && h > 0) {
+        const pw = Math.floor(w * dpr);
+        const ph = Math.floor(h * dpr);
+        if (topbarCanvas.width !== pw || topbarCanvas.height !== ph) {
+          topbarCanvas.width = pw;
+          topbarCanvas.height = ph;
+        }
+        const ctx = topbarCanvas.getContext('2d');
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, w, h);
+          drawTopbarScene(ctx, w, h, palette, phase);
+        }
+      }
     }
   }
 
@@ -522,7 +402,6 @@ export function initAtmosphere() {
     }
   }
 
-  // Throttle pixel-art stepping cleanly (~15fps retro wallpaper cadence) for crisp low-CPU motion
   function tick(ts) {
     if (document.hidden || reducedMotion.matches) {
       stopLoop();
@@ -531,46 +410,25 @@ export function initAtmosphere() {
     if (!lastTs) lastTs = ts;
     const dt = Math.min(0.05, (ts - lastTs) / 1000);
     lastTs = ts;
-    accTime += dt;
-    if (accTime >= 0.066) {
-      phase += accTime;
-      accTime = 0;
-      renderNavFootage();
-    }
+    phase += dt;
+    renderNavScenes();
     rafId = requestAnimationFrame(tick);
   }
 
   function startOrFreeze() {
     stopLoop();
     renderMainBackdrop();
-    renderNavFootage();
+    renderNavScenes();
     document.documentElement.dataset.atmosphereReady = 'true';
     if (!reducedMotion.matches && !document.hidden) {
       lastTs = 0;
-      accTime = 0;
       rafId = requestAnimationFrame(tick);
     }
   }
 
-  const ro = new ResizeObserver((entries) => {
-    const dpr = window.devicePixelRatio || 1;
-    for (const entry of entries) {
-      const box = entry.devicePixelContentBoxSize?.[0];
-      const physW = box ? box.inlineSize : Math.round(entry.contentRect.width * dpr);
-      const physH = box ? box.blockSize : Math.round(entry.contentRect.height * dpr);
-      stageSizes.set(entry.target, { w: physW, h: physH });
-    }
-    renderNavFootage();
-  });
-
-  for (const el of [sidebarEl, topbarEl]) {
-    if (!el) continue;
-    try {
-      ro.observe(el, { box: 'device-pixel-content-box' });
-    } catch {
-      ro.observe(el);
-    }
-  }
+  const ro = new ResizeObserver(() => renderNavScenes());
+  if (sidebarEl) ro.observe(sidebarEl);
+  if (topbarEl) ro.observe(topbarEl);
 
   startOrFreeze();
 
@@ -579,8 +437,8 @@ export function initAtmosphere() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       renderMainBackdrop();
-      renderNavFootage();
-    }, 120);
+      renderNavScenes();
+    }, 100);
   };
   window.addEventListener('resize', onResize, { passive: true });
 
@@ -591,10 +449,9 @@ export function initAtmosphere() {
   document.addEventListener('visibilitychange', onVisibility);
 
   const observer = new MutationObserver(() => {
-    palette = buildPalette(bridge);
-    prebakeCottonGrain(grainHost, bridge);
+    palette = buildBotanicalPalette(bridge);
     renderMainBackdrop();
-    renderNavFootage();
+    renderNavScenes();
   });
   observer.observe(document.documentElement, {
     attributes: true,
@@ -603,9 +460,9 @@ export function initAtmosphere() {
 
   const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
   const onThemeMedia = () => {
-    palette = buildPalette(bridge);
+    palette = buildBotanicalPalette(bridge);
     renderMainBackdrop();
-    renderNavFootage();
+    renderNavScenes();
   };
   mediaDark.addEventListener('change', onThemeMedia);
   reducedMotion.addEventListener('change', startOrFreeze);
