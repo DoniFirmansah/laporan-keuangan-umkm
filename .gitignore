@@ -1,5 +1,6 @@
-# Ignore scanned textbook PDF & local temp/OS artifacts
+# Ignore scanned textbook PDF, private references & local temp/OS artifacts
 *.pdf
+referensi/
 .DS_Store
 Thumbs.db
 __pycache__/
