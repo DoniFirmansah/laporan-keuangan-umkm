@@ -84,16 +84,19 @@ function persistState() {
 }
 
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
+  const safeTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', safeTheme);
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if (metaTheme) {
-    metaTheme.setAttribute('content', theme === 'dark' ? '#131614' : '#f6f3eb');
+    metaTheme.setAttribute('content', safeTheme === 'dark' ? '#131614' : '#f6f3eb');
   }
-  const sun = document.getElementById('theme-icon-sun');
-  const moon = document.getElementById('theme-icon-moon');
-  if (sun && moon) {
-    sun.hidden = theme === 'dark';
-    moon.hidden = theme !== 'dark';
+  const lightBtn = document.getElementById('theme-light-btn');
+  const darkBtn = document.getElementById('theme-dark-btn');
+  if (lightBtn && darkBtn) {
+    lightBtn.classList.toggle('active', safeTheme === 'light');
+    darkBtn.classList.toggle('active', safeTheme === 'dark');
+    lightBtn.setAttribute('aria-pressed', String(safeTheme === 'light'));
+    darkBtn.setAttribute('aria-pressed', String(safeTheme === 'dark'));
   }
 }
 
@@ -443,9 +446,15 @@ function wireGlobalControls() {
 
   document.getElementById('sidebar-backdrop')?.addEventListener('click', closeMobileSidebar);
 
-  document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    applyTheme(state.theme);
+  document.getElementById('theme-light-btn')?.addEventListener('click', () => {
+    state.theme = 'light';
+    applyTheme('light');
+    persistState();
+  });
+
+  document.getElementById('theme-dark-btn')?.addEventListener('click', () => {
+    state.theme = 'dark';
+    applyTheme('dark');
     persistState();
   });
 

@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --atmo-safe-top: 64px;
   --atmo-safe-left: 264px;
   --atmo-safe-right: 24px;
@@ -46,6 +47,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   /* Matte Mineral Slate — Dark Mode (L <= 0.179, zero neon) */
   --bg-base: #131614;
   --bg-surface: #1a1e1b;
@@ -101,6 +103,10 @@ body {
   background-color: transparent;
   color: var(--text-primary);
   overflow-x: clip;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 :focus-visible {

@@ -117,7 +117,7 @@ export function renderBuilderView(
           </div>
         </div>
         <div class="table-wrap">
-          <table class="ledger-table">
+          <table class="ledger-table builder-table">
             <thead>
               <tr><th>Akun Pendapatan &amp; Beban</th><th class="num">Nominal (Rp)</th><th></th></tr>
             </thead>
@@ -174,7 +174,7 @@ export function renderBuilderView(
           </div>
         </div>
         <div class="table-wrap">
-          <table class="ledger-table">
+          <table class="ledger-table builder-table">
             <thead>
               <tr><th>Akun Neraca</th><th class="num">Nominal (Rp)</th><th></th></tr>
             </thead>

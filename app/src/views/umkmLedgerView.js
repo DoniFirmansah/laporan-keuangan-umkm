@@ -98,7 +98,7 @@ export function renderUmkmLedgerView(
           filtered.length === 0
             ? `<div class="empty-state">Belum ada transaksi yang cocok. Klik "Tambah Transaksi Baru" untuk mulai mencatat.</div>`
             : `
-            <div class="table-wrap">
+            <div class="table-wrap jrn-desktop-table">
               <table class="ledger-table">
                 <thead>
                   <tr>
@@ -147,6 +147,42 @@ export function renderUmkmLedgerView(
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <div class="jrn-mobile-list" aria-label="Daftar jurnal versi mobile">
+              ${filtered
+                .map(
+                  (entry) => `
+                  <article class="jrn-card">
+                    <div class="jrn-card-head">
+                      <div style="min-width:0;">
+                        <div class="code-tag">${esc(entry.id)} — ${esc(entry.date)}</div>
+                        <p class="jrn-card-desc">${esc(entry.description)}</p>
+                      </div>
+                      <button type="button" class="icon-btn" data-del-entry="${esc(entry.id)}" aria-label="Hapus ${esc(entry.id)}" title="Hapus transaksi">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </div>
+                    <div class="jrn-card-lines">
+                      ${entry.lines
+                        .map((ln) => {
+                          const isDebit = ln.debit > 0;
+                          const amt = isDebit ? ln.debit : ln.credit;
+                          return `
+                            <div class="jrn-card-line">
+                              <span class="jrn-card-acc">${isDebit ? 'Debit:' : 'Kredit:'} ${esc(ACCOUNT_MAP[ln.accountCode]?.name || ln.accountCode)}</span>
+                              <span class="jrn-card-amt ${isDebit ? 'is-debit' : 'is-credit'}">${formatRp(amt)}</span>
+                            </div>`;
+                        })
+                        .join('')}
+                    </div>
+                  </article>`
+                )
+                .join('')}
+              <div class="jrn-mobile-total">
+                <span>Total Debit = Kredit</span>
+                <span class="tabular">${formatRp(report.journalTotalDebit)}</span>
+              </div>
             </div>`
         }
       </section>

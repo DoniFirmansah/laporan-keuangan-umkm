@@ -66,6 +66,7 @@
   place-items: center;
   width: 36px;
   height: 36px;
+  padding: 0;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
@@ -76,6 +77,47 @@
 
 .icon-btn:hover {
   background-color: var(--bg-inset);
+}
+
+/* Clear Two-State Theme Switch Pill */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  gap: 2px;
+  height: 36px;
+  border-radius: 999px;
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-strong);
+  flex-shrink: 0;
+}
+
+.theme-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.theme-opt:hover {
+  color: var(--text-primary);
+}
+
+.theme-opt.active {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
 }
 
 /* Guide Drawer */
@@ -824,21 +866,137 @@ dialog.ledger-dialog::backdrop {
   border-radius: var(--radius-md);
 }
 
+/* Mobile-First Journal Cards (Hidden on Desktop, Shown <= 680px) */
+.jrn-mobile-list {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jrn-card {
+  padding: 12px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jrn-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jrn-card-desc {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.jrn-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.jrn-card-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.jrn-card-acc {
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.jrn-card-amt {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.jrn-card-amt.is-debit {
+  color: var(--status-ok);
+}
+
+.jrn-card-amt.is-credit {
+  color: var(--text-primary);
+}
+
+.jrn-mobile-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 13px;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-primary-tint);
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 3px double var(--border-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .jrn-desktop-table {
+    display: none;
+  }
+
+  .jrn-mobile-list {
+    display: flex;
+  }
+}
+
 @media (max-width: 640px) {
   .panel {
     padding: 14px;
   }
 
   .ledger-mast {
-    padding: 14px;
+    padding: 13px 14px;
+    gap: 10px;
   }
 
   .ledger-proof-grid {
     grid-template-columns: 1fr;
+    gap: 8px;
+    padding-top: 10px;
+  }
+
+  .proof-cell {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .proof-cell:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .proof-sub {
+    width: 100%;
   }
 
   .proof-value {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .mast-actions {
@@ -857,6 +1015,19 @@ dialog.ledger-dialog::backdrop {
   .search-box {
     max-width: none;
     flex-basis: 100%;
+  }
+
+  .segmented {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .segmented button {
+    white-space: normal;
+    text-align: center;
+    padding: 7px 8px;
+    line-height: 1.25;
   }
 
   .tab-bar {
@@ -888,6 +1059,15 @@ dialog.ledger-dialog::backdrop {
   select {
     font-size: 16px;
     min-height: 40px;
+  }
+
+  .builder-table td:first-child {
+    min-width: 120px;
+  }
+
+  input.num-input {
+    min-width: 112px;
+    max-width: 145px;
   }
 
   .split-line-row {
