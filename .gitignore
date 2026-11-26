@@ -1,0 +1,8 @@
+# Ignore scanned textbook PDF & local temp/OS artifacts
+*.pdf
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.vscode/
+.idea/
