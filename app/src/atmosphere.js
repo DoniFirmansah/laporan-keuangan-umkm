@@ -1,10 +1,12 @@
 /**
- * Tier 1 Calmly Unique Ledger Backdrop + Integer-Scaled Pixel Botanical Nav Engine
- * - Main ambient backdrop: Mode A fixed (z-index: 0, pointer-events: none), 256x256 grain
- * - Navbars (.sidebar & .topbar): Integer-scaled Pixel Art Penghijauan (Ordered Bayer 4x4 + sprites)
- * - 1x1 sRGB Color Bridge (zero hardcoded colors in JS)
- * - ResizeObserver with devicePixelContentBoxSize snapping + imageSmoothingEnabled = false
- * - Auto-resync on theme flip (MutationObserver + matchMedia), honors prefers-reduced-motion
+ * Tier 1-2 Wallpaper-Engine-Grade Pixel Botanical Greenhouse Engine
+ * - Main workspace backdrop: Mode A static grain + soft daylight/lamp wash
+ * - Sidebar & Full-Width Topbar: Multi-layer Integer-Scaled Pixel Greenhouse Footage
+ *   - Layer 4: Bayer 4x4 dithered sky (Misty Morning / Moonlit Night) + moving pixel clouds / stars
+ *   - Layer 3: Distant forest ridge silhouettes & diagonal Bayer-stepped sunbeams (god rays)
+ *   - Layer 2: Victorian greenhouse mullions, arched rafters, wooden shelf, pines, monsteras, lantern
+ *   - Layer 1: Gentle swaying hanging vines + floating pollen motes / fireflies (animated RAF)
+ * - 100% token-locked via 1x1 sRGB Color Bridge; pauses on hidden/offscreen; static on reduced-motion
  */
 
 const BAYER_4X4 = [
@@ -14,7 +16,7 @@ const BAYER_4X4 = [
   15, 7, 13, 5,
 ];
 
-function bayerThreshold(x, y) {
+function bayer(x, y) {
   return (BAYER_4X4[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
 }
 
@@ -42,7 +44,7 @@ function createColorBridge() {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
-  function mixRgb(a, b, t) {
+  function mix(a, b, t) {
     return {
       r: Math.round(a.r + (b.r - a.r) * t),
       g: Math.round(a.g + (b.g - a.g) * t),
@@ -50,7 +52,7 @@ function createColorBridge() {
     };
   }
 
-  return { resolveRgb, rgba, mixRgb };
+  return { resolveRgb, rgba, mix };
 }
 
 export function relativeLuminance(r, g, b) {
@@ -87,115 +89,326 @@ function prebakeCottonGrain(grainHost, bridge) {
   grainHost.style.backgroundImage = `url(${offscreen.toDataURL('image/png')})`;
 }
 
-// Pixel sprite matrices (integer grid)
-const SPRITE_TREE = [
-  '...LLLL...',
-  '..LLHHLL..',
-  '.LLHHHHLL.',
-  '.LHHHHHHL.',
-  'LLHHLLHHLL',
-  'LHHLLLLHHL',
-  '.LLLLLLLL.',
-  '..LLSSLL..',
-  '....TT....',
-  '....TT....',
-  '....TT....',
-  '...TTTT...',
+// Multi-tone botanical pixel sprites (L=mid leaf, H=highlight leaf, D=deep shadow, T=wood/pot, G=warm glow)
+const SPRITE_CYPRESS = [
+  '....H....',
+  '...HLL...',
+  '...LLD...',
+  '..HLLLD..',
+  '..LLLDD..',
+  '.HLLLLD..',
+  '.LLLLDDD.',
+  'HLLLLLDD.',
+  'LLLLLDDDD',
+  '.LLLDDDD.',
+  '...TTD...',
+  '...TTT...',
 ];
 
-const SPRITE_POTTED = [
-  '..HH..H...',
-  '.HLL.LLH..',
-  '..LLLLL...',
-  '...LLL....',
-  '..TTTTT...',
-  '.TTTTTTT..',
-  '..SSSSS...',
-  '..SSSSS...',
+const SPRITE_MONSTERA = [
+  '.HH...HH.',
+  'HLLH.HLLH',
+  'LLLD.DLLL',
+  '.LLD.DLL.',
+  '..HD.DH..',
+  '...L.L...',
+  '..TTTTT..',
+  '..TTTTT..',
+  '...TTT...',
 ];
 
-const SPRITE_FERN = [
-  '.H....H.',
-  'HL....LH',
-  '.LL..LL.',
-  '..LLLL..',
-  '...LL...',
+const SPRITE_LANTERN = [
+  '..DDD..',
+  '.DGGGD.',
+  '.DGGGD.',
+  '..DDD..',
+  '...T...',
 ];
 
-function drawPixelSprite(vCtx, sprite, ox, oy, paletteMap) {
+const SPRITE_CLOUD = [
+  '....GGGGGG....',
+  '..GGGGGGGGGG..',
+  '.GGGGGGGGGGGG.',
+  'GGGGGGGGGGGGGG',
+];
+
+const SPRITE_CLOUD_SMALL = [
+  '..GGGGG..',
+  '.GGGGGGG.',
+  'GGGGGGGGG',
+];
+
+function drawSprite(vCtx, sprite, ox, oy, map) {
   const rx = Math.round(ox);
   const ry = Math.round(oy);
-  for (let row = 0; row < sprite.length; row++) {
-    const line = sprite[row];
-    for (let col = 0; col < line.length; col++) {
-      const ch = line[col];
+  for (let r = 0; r < sprite.length; r++) {
+    const line = sprite[r];
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
       if (ch === '.') continue;
-      const color = paletteMap[ch];
+      const color = map[ch];
       if (!color) continue;
       vCtx.fillStyle = color;
-      vCtx.fillRect(rx + col, ry + row, 1, 1);
+      vCtx.fillRect(rx + c, ry + r, 1, 1);
     }
   }
 }
 
-function drawHangingVine(vCtx, vx, startY, length, leafColor, hiColor) {
-  const x = Math.round(vx);
-  const y0 = Math.round(startY);
-  for (let i = 0; i < length; i++) {
-    vCtx.fillStyle = leafColor;
-    vCtx.fillRect(x, y0 + i, 1, 1);
+function drawHangingVine(vCtx, baseX, startY, len, swayOffset, pal) {
+  const bx = Math.round(baseX);
+  const sy = Math.round(startY);
+  for (let i = 0; i < len; i++) {
+    // Tip sways subtly in integer pixels
+    const shift = i > len * 0.55 ? Math.round(swayOffset) : 0;
+    const x = bx + shift;
+    const y = sy + i;
+    vCtx.fillStyle = pal.leafDeep;
+    vCtx.fillRect(x, y, 1, 1);
     if (i % 3 === 1) {
-      const side = i % 6 === 1 ? -1 : 1;
-      vCtx.fillStyle = hiColor;
-      vCtx.fillRect(x + side, y0 + i, 1, 1);
-      vCtx.fillStyle = leafColor;
-      vCtx.fillRect(x + side, y0 + i + 1, 1, 1);
+      const dir = i % 6 === 1 ? -1 : 1;
+      vCtx.fillStyle = pal.leafBright;
+      vCtx.fillRect(x + dir, y, 1, 1);
+      vCtx.fillStyle = pal.leafMid;
+      vCtx.fillRect(x + dir, y + 1, 1, 1);
     }
   }
 }
 
-function buildPixelPalette(bridge) {
+function buildPalette(bridge) {
   const bg = bridge.resolveRgb('--bg-base');
+  const inset = bridge.resolveRgb('--bg-inset');
   const accent = bridge.resolveRgb('--accent-primary');
   const sec = bridge.resolveRgb('--accent-secondary');
+  const text = bridge.resolveRgb('--text-primary');
   const muted = bridge.resolveRgb('--text-muted');
   const isLight = relativeLuminance(bg.r, bg.g, bg.b) > 0.179;
 
-  // Token-locked botanical tones with gentle alpha so nav text remains >= 4.5:1
-  const leafDark = bridge.rgba(bridge.mixRgb(accent, muted, 0.25), isLight ? 0.26 : 0.30);
-  const leafBright = bridge.rgba(accent, isLight ? 0.34 : 0.38);
-  const leafSoft = bridge.rgba(accent, isLight ? 0.14 : 0.17);
-  const trunk = bridge.rgba(sec, isLight ? 0.28 : 0.30);
-  const potShade = bridge.rgba(bridge.mixRgb(sec, muted, 0.35), isLight ? 0.24 : 0.26);
+  // Derived strictly from CSS tokens — cohesive archival botanical palette
+  const skyTop = isLight ? bridge.mix(bg, accent, 0.16) : bridge.mix(bg, accent, 0.12);
+  const skyMid = isLight ? bridge.mix(bg, accent, 0.08) : bridge.mix(bg, inset, 0.45);
+  const hillFar = bridge.rgba(bridge.mix(accent, muted, 0.35), isLight ? 0.22 : 0.28);
+  const hillNear = bridge.rgba(bridge.mix(accent, text, 0.15), isLight ? 0.30 : 0.34);
+
+  const leafBright = bridge.rgba(accent, isLight ? 0.62 : 0.58);
+  const leafMid = bridge.rgba(bridge.mix(accent, text, 0.18), isLight ? 0.54 : 0.46);
+  const leafDeep = bridge.rgba(bridge.mix(accent, text, 0.38), isLight ? 0.48 : 0.40);
+  const wood = bridge.rgba(bridge.mix(sec, text, 0.2), isLight ? 0.55 : 0.48);
+  const frameLine = bridge.rgba(bridge.mix(text, accent, 0.35), isLight ? 0.20 : 0.26);
+  const sunbeam = bridge.rgba(isLight ? bridge.mix(sec, bg, 0.25) : sec, isLight ? 0.20 : 0.18);
+  const glow = bridge.rgba(isLight ? bridge.mix(bg, sec, 0.18) : sec, isLight ? 0.65 : 0.72);
+  const cloudColor = bridge.rgba(isLight ? bridge.mix(bg, text, 0.06) : bridge.mix(accent, muted, 0.5), isLight ? 0.72 : 0.28);
 
   return {
     isLight,
-    bg,
-    accent,
-    leafDark,
+    skyTop: bridge.rgba(skyTop, 1),
+    skyMid: bridge.rgba(skyMid, 1),
+    hillFar,
+    hillNear,
     leafBright,
-    leafSoft,
-    trunk,
-    potShade,
+    leafMid,
+    leafDeep,
+    wood,
+    frameLine,
+    sunbeam,
+    glow,
+    cloudColor,
     spriteMap: {
-      L: leafDark,
+      L: leafMid,
       H: leafBright,
-      T: trunk,
-      S: potShade,
+      D: leafDeep,
+      T: wood,
+      G: glow,
+    },
+    cloudMap: {
+      G: cloudColor,
     },
   };
 }
 
-function renderPixelStage(canvas, physW, physH, dpr, drawer) {
+function drawSkyAndDistantForest(vCtx, vw, vh, pal, phase, isTopbar) {
+  // Layer 4: Bayer 4x4 dithered sky gradient
+  vCtx.fillStyle = pal.skyMid;
+  vCtx.fillRect(0, 0, vw, vh);
+
+  const skyBand = isTopbar ? vh : Math.floor(vh * 0.62);
+  for (let y = 0; y < skyBand; y++) {
+    const t = 1 - y / Math.max(1, skyBand);
+    for (let x = 0; x < vw; x++) {
+      if (t * 0.85 > bayer(x, y)) {
+        vCtx.fillStyle = pal.skyTop;
+        vCtx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+
+  // Sun / Moon & Drifting Clouds or Stars
+  if (pal.isLight) {
+    const c1x = ((phase * 4.2) % (vw + 24)) - 14;
+    const c2x = ((phase * 2.6 + vw * 0.52) % (vw + 24)) - 12;
+    drawSprite(vCtx, SPRITE_CLOUD, c1x, isTopbar ? 3 : 8, pal.cloudMap);
+    drawSprite(vCtx, SPRITE_CLOUD_SMALL, c2x, isTopbar ? 6 : 20, pal.cloudMap);
+  } else {
+    // Pixel crescent moon + calm twinkling stars
+    const moonX = Math.max(8, vw - 18);
+    const moonY = isTopbar ? 4 : 10;
+    vCtx.fillStyle = pal.glow;
+    vCtx.fillRect(moonX, moonY, 4, 4);
+    vCtx.fillStyle = pal.skyTop;
+    vCtx.fillRect(moonX + 2, moonY, 2, 2);
+
+    const starCount = isTopbar ? 12 : 16;
+    for (let i = 0; i < starCount; i++) {
+      const sx = (i * 37 + 11) % Math.max(12, vw - 4);
+      const sy = (i * 19 + 3) % Math.max(8, Math.floor(skyBand * 0.65));
+      const twinkle = ((Math.floor(phase * 1.4) + i) % 5) === 0;
+      vCtx.fillStyle = twinkle ? pal.glow : pal.cloudColor;
+      vCtx.fillRect(sx, sy, 1, 1);
+    }
+  }
+
+  // Layer 3: Distant forest ridge silhouette with Bayer mist
+  const horizonY = isTopbar ? vh - 5 : Math.floor(vh * 0.72);
+  for (let x = 0; x < vw; x++) {
+    const ridge1 = Math.round(Math.sin(x * 0.11) * 3 + Math.cos(x * 0.23) * 2);
+    const top1 = Math.max(2, horizonY - 5 - Math.abs(ridge1));
+    vCtx.fillStyle = pal.hillFar;
+    vCtx.fillRect(x, top1, 1, vh - top1);
+
+    const ridge2 = Math.round(Math.sin(x * 0.19 + 1.4) * 2 + (x % 5 === 0 ? 2 : 0));
+    const top2 = Math.max(4, horizonY - Math.abs(ridge2));
+    vCtx.fillStyle = pal.hillNear;
+    vCtx.fillRect(x, top2, 1, vh - top2);
+  }
+
+  // Diagonal Bayer-dithered greenhouse god-rays (light mode) or warm lantern shafts
+  const rayCount = isTopbar ? 3 : 2;
+  for (let r = 0; r < rayCount; r++) {
+    const baseRx = Math.round(vw * (0.28 + r * 0.28) + Math.sin(phase * 0.25 + r) * 2);
+    for (let y = 0; y < vh; y++) {
+      const rx = baseRx - Math.floor(y * 0.45);
+      const halfW = isTopbar ? 5 : 7;
+      for (let dx = -halfW; dx <= halfW; dx++) {
+        const px = rx + dx;
+        if (px < 0 || px >= vw) continue;
+        const falloff = 1 - Math.abs(dx) / (halfW + 1);
+        if (falloff * 0.55 > bayer(px, y)) {
+          vCtx.fillStyle = pal.sunbeam;
+          vCtx.fillRect(px, y, 1, 1);
+        }
+      }
+    }
+  }
+}
+
+function drawTopbarFootage(vCtx, vw, vh, pal, phase) {
+  drawSkyAndDistantForest(vCtx, vw, vh, pal, phase, true);
+
+  // Layer 2: Panoramic Victorian greenhouse window mullions (left to right)
+  vCtx.fillStyle = pal.frameLine;
+  vCtx.fillRect(0, 0, vw, 1);
+  vCtx.fillRect(0, vh - 1, vw, 1);
+  const paneStep = Math.max(24, Math.floor(vw / 7));
+  for (let x = paneStep; x < vw - 8; x += paneStep) {
+    vCtx.fillRect(x, 0, 1, vh);
+  }
+
+  // Layer 1: Swaying hanging botanical vines & corner foliage across full header width
+  const sway = Math.sin(phase * 0.9);
+  const vineSpots = [0.06, 0.18, 0.34, 0.49, 0.63, 0.78, 0.91];
+  vineSpots.forEach((ratio, idx) => {
+    const vx = Math.round(vw * ratio);
+    const len = idx % 2 === 0 ? Math.min(11, vh - 4) : Math.min(7, vh - 6);
+    const localSway = sway * (idx % 2 === 0 ? 1 : -1);
+    drawHangingVine(vCtx, vx, 1, Math.max(4, len), localSway, pal);
+  });
+
+  // Grounded pixel cypresses & monstera silhouettes along bottom border of header
+  const cypressSpots = [0.12, 0.41, 0.72, 0.87];
+  for (const ratio of cypressSpots) {
+    const cx = Math.round(vw * ratio);
+    if (cx > 4 && cx < vw - 10) {
+      drawSprite(vCtx, SPRITE_CYPRESS, cx, vh - SPRITE_CYPRESS.length, pal.spriteMap);
+    }
+  }
+
+  // Ambient floating pollen / firefly particles across full width
+  const particleCount = Math.max(8, Math.floor(vw / 24));
+  for (let i = 0; i < particleCount; i++) {
+    const px = Math.round(((i * 41 + phase * (3 + (i % 3))) % vw));
+    const py = Math.round((i * 13 + Math.sin(phase * 1.1 + i) * 3 + vh) % Math.max(6, vh - 2));
+    vCtx.fillStyle = i % 2 === 0 ? pal.glow : pal.leafBright;
+    vCtx.fillRect(px, py, 1, 1);
+  }
+}
+
+function drawSidebarFootage(vCtx, vw, vh, pal, phase) {
+  drawSkyAndDistantForest(vCtx, vw, vh, pal, phase, false);
+
+  // Layer 2: Greenhouse vertical mullions & arched top beam
+  vCtx.fillStyle = pal.frameLine;
+  vCtx.fillRect(0, 0, vw, 2);
+  vCtx.fillRect(0, 0, 1, vh);
+  vCtx.fillRect(vw - 1, 0, 1, vh);
+  vCtx.fillRect(Math.floor(vw * 0.5), 0, 1, Math.floor(vh * 0.75));
+  const shelfY = Math.max(48, vh - 36);
+  vCtx.fillRect(0, Math.floor(vh * 0.38), vw, 1);
+
+  // Conservatory wooden potting bench / garden terrace above bottom footer
+  vCtx.fillStyle = pal.wood;
+  vCtx.fillRect(2, shelfY, vw - 4, 2);
+  vCtx.fillStyle = pal.leafDeep;
+  vCtx.fillRect(2, shelfY - 1, vw - 4, 1);
+
+  // Lush pixel botanical collection along the conservatory shelf & mid-canopy
+  drawSprite(vCtx, SPRITE_CYPRESS, 5, shelfY - SPRITE_CYPRESS.length, pal.spriteMap);
+  if (vw >= 54) {
+    drawSprite(vCtx, SPRITE_MONSTERA, Math.floor(vw * 0.36), shelfY - SPRITE_MONSTERA.length, pal.spriteMap);
+  }
+  if (vw >= 74) {
+    drawSprite(vCtx, SPRITE_CYPRESS, vw - 15, shelfY - SPRITE_CYPRESS.length, pal.spriteMap);
+  }
+
+  // Hanging lantern with Bayer-dithered warm glow halo in upper-right conservatory
+  const lanX = vw - 14;
+  const lanY = 14;
+  for (let dy = -6; dy <= 8; dy++) {
+    for (let dx = -6; dx <= 12; dx++) {
+      const dist = Math.hypot(dx - 3, dy - 2);
+      const strength = Math.max(0, 1 - dist / 8) * 0.55;
+      if (strength > bayer(lanX + dx, lanY + dy)) {
+        vCtx.fillStyle = pal.sunbeam;
+        vCtx.fillRect(lanX + dx, lanY + dy, 1, 1);
+      }
+    }
+  }
+  drawSprite(vCtx, SPRITE_LANTERN, lanX, lanY, pal.spriteMap);
+
+  // Layer 1: Swaying hanging vines from top beam
+  const sway = Math.sin(phase * 0.85);
+  drawHangingVine(vCtx, 7, 2, 16, sway, pal);
+  drawHangingVine(vCtx, Math.floor(vw * 0.32), 2, 11, -sway, pal);
+  drawHangingVine(vCtx, vw - 7, 2, 19, sway, pal);
+
+  // Floating sunlit motes / fireflies
+  for (let i = 0; i < 14; i++) {
+    const px = Math.round(((i * 23 + Math.sin(phase * 0.7 + i) * 5 + vw) % Math.max(8, vw - 4)) + 2);
+    const py = Math.round(((i * 31 + phase * 2.2) % Math.max(20, vh - 6)) + 3);
+    vCtx.fillStyle = i % 2 === 0 ? pal.glow : pal.leafBright;
+    vCtx.fillRect(px, py, 1, 1);
+  }
+}
+
+function blitStage(canvas, physW, physH, dpr, drawer) {
   if (!canvas || physW <= 0 || physH <= 0) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  canvas.width = physW;
-  canvas.height = physH;
+  if (canvas.width !== physW || canvas.height !== physH) {
+    canvas.width = physW;
+    canvas.height = physH;
+  }
 
-  // Crisp integer scale (2px logical cell -> super fine crisp botanical pixel art)
-  const intScale = Math.max(2, Math.round(2 * dpr));
+  const intScale = Math.max(2, Math.round(2.5 * dpr));
   const vw = Math.max(24, Math.ceil(physW / intScale));
   const vh = Math.max(16, Math.ceil(physH / intScale));
 
@@ -205,109 +418,11 @@ function renderPixelStage(canvas, physW, physH, dpr, drawer) {
   const vCtx = vCanvas.getContext('2d');
   if (!vCtx) return;
 
-  vCtx.clearRect(0, 0, vw, vh);
   drawer(vCtx, vw, vh);
 
   ctx.clearRect(0, 0, physW, physH);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(vCanvas, 0, 0, vw, vh, 0, 0, vw * intScale, vh * intScale);
-}
-
-function drawSidebarGarden(vCtx, vw, vh, pal) {
-  // 1. Ordered Bayer 4x4 top canopy mist (first 16 virtual rows)
-  const canopyH = Math.min(18, Math.floor(vh * 0.16));
-  for (let y = 0; y < canopyH; y++) {
-    const density = (1 - y / canopyH) * 0.52;
-    for (let x = 0; x < vw; x++) {
-      if (density > bayerThreshold(x, y)) {
-        vCtx.fillStyle = pal.leafSoft;
-        vCtx.fillRect(x, y, 1, 1);
-      }
-    }
-  }
-
-  // Subtle hanging vines in upper-right margin of sidebar
-  if (vw > 40) {
-    drawHangingVine(vCtx, vw - 6, 0, 12, pal.leafDark, pal.leafBright);
-    drawHangingVine(vCtx, vw - 11, 0, 7, pal.leafSoft, pal.leafDark);
-  }
-
-  // 2. Ordered Bayer 4x4 bottom ground mist + pixel penghijauan garden sitting just above footer
-  const footerOffset = 46;
-  const groundY = Math.max(40, vh - footerOffset);
-  const mistTop = Math.max(0, groundY - 22);
-
-  for (let y = mistTop; y < vh; y++) {
-    const t = y < groundY ? (y - mistTop) / 26 : 1 - (y - groundY) / Math.max(1, vh - groundY);
-    const density = Math.max(0, t * 0.45);
-    for (let x = 0; x < vw; x++) {
-      if (density > bayerThreshold(x, y)) {
-        vCtx.fillStyle = pal.leafSoft;
-        vCtx.fillRect(x, y, 1, 1);
-      }
-    }
-  }
-
-  // Pixel grass edge & stepping stones along bottom garden terrace
-  vCtx.fillStyle = pal.leafDark;
-  vCtx.fillRect(2, groundY, Math.max(8, vw - 4), 1);
-  for (let x = 3; x < vw - 3; x += 4) {
-    vCtx.fillStyle = pal.leafBright;
-    vCtx.fillRect(x, groundY - 1, 1, 1);
-  }
-
-  // Botanical sprites arranged naturally along the lower garden shelf
-  drawPixelSprite(vCtx, SPRITE_TREE, 4, groundY - SPRITE_TREE.length, pal.spriteMap);
-  if (vw >= 48) {
-    drawPixelSprite(vCtx, SPRITE_FERN, Math.floor(vw * 0.36), groundY - SPRITE_FERN.length, pal.spriteMap);
-  }
-  if (vw >= 64) {
-    drawPixelSprite(vCtx, SPRITE_POTTED, vw - 14, groundY - SPRITE_POTTED.length, pal.spriteMap);
-  }
-
-  // Tiny drifting pixel leaf motes (calm static placement)
-  const motes = [
-    [vw - 18, Math.floor(vh * 0.34)],
-    [vw - 8, Math.floor(vh * 0.52)],
-    [6, Math.floor(vh * 0.64)],
-    [Math.floor(vw * 0.55), groundY - 16],
-  ];
-  vCtx.fillStyle = pal.leafBright;
-  for (const [mx, my] of motes) {
-    if (mx > 1 && mx < vw - 1 && my > 1 && my < vh - 1) {
-      vCtx.fillRect(Math.round(mx), Math.round(my), 1, 1);
-    }
-  }
-}
-
-function drawTopbarCanopy(vCtx, vw, vh, pal) {
-  // Ordered Bayer 4x4 botanical canopy gradient along top edge (subtle behind text)
-  const canopyRows = Math.min(vh, 14);
-  for (let y = 0; y < canopyRows; y++) {
-    const vertFade = 1 - y / Math.max(1, canopyRows);
-    for (let x = 0; x < vw; x++) {
-      const horizBias = x < vw * 0.45 ? 0.22 : 0.48;
-      const density = vertFade * horizBias * 0.42;
-      if (density > bayerThreshold(x, y)) {
-        vCtx.fillStyle = pal.leafSoft;
-        vCtx.fillRect(x, y, 1, 1);
-      }
-    }
-  }
-
-  // Delicate pixel vines strictly in open mid-right space (clear of left title)
-  const vinePositions = vw < 200 ? [0.56, 0.95] : [0.46, 0.56, 0.66, 0.96];
-  vinePositions.forEach((ratio, idx) => {
-    const vx = Math.round(vw * ratio);
-    if (vx > 24 && vx < vw - 2) {
-      const len = idx % 2 === 0 ? Math.min(9, vh - 6) : Math.min(6, vh - 8);
-      drawHangingVine(vCtx, vx, 0, Math.max(3, len), pal.leafDark, pal.leafBright);
-    }
-  });
-
-  if (vw > 180 && vh >= 20) {
-    drawPixelSprite(vCtx, SPRITE_FERN, Math.round(vw * 0.58), vh - SPRITE_FERN.length, pal.spriteMap);
-  }
 }
 
 export function initAtmosphere() {
@@ -322,6 +437,13 @@ export function initAtmosphere() {
   prebakeCottonGrain(grainHost, bridge);
 
   const stageSizes = new Map();
+  let palette = buildPalette(bridge);
+  let phase = 0;
+  let rafId = null;
+  let lastTs = 0;
+  let accTime = 0;
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   function renderMainBackdrop() {
     if (!mainCanvas) return;
@@ -349,8 +471,8 @@ export function initAtmosphere() {
     const cy = Math.max(safeTop + 60, height * 0.18);
     const rad = Math.max(width, height) * 0.52;
     const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, rad);
-    grad.addColorStop(0, bridge.rgba(accent, isLight ? 0.07 : 0.10));
-    grad.addColorStop(0.55, bridge.rgba(accent, isLight ? 0.025 : 0.035));
+    grad.addColorStop(0, bridge.rgba(accent, isLight ? 0.06 : 0.09));
+    grad.addColorStop(0.55, bridge.rgba(accent, isLight ? 0.02 : 0.03));
     grad.addColorStop(1, bridge.rgba(bg, 0));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
@@ -366,19 +488,10 @@ export function initAtmosphere() {
       ctx.moveTo(ruleX + 4, safeTop + 20);
       ctx.lineTo(ruleX + 4, height - 24);
       ctx.stroke();
-
-      ctx.beginPath();
-      for (let y = safeTop + 40; y < height - 32; y += 36) {
-        const tick = (y - safeTop) % 144 === 0 ? 12 : 5;
-        ctx.moveTo(ruleX + 4, y);
-        ctx.lineTo(ruleX + 4 + tick, y);
-      }
-      ctx.stroke();
     }
   }
 
-  function renderNavPixelCanvases() {
-    const pal = buildPixelPalette(bridge);
+  function renderNavFootage() {
     const dpr = window.devicePixelRatio || 1;
 
     if (sidebarEl && sidebarCanvas) {
@@ -386,8 +499,8 @@ export function initAtmosphere() {
         w: Math.round(sidebarEl.clientWidth * dpr),
         h: Math.round(sidebarEl.clientHeight * dpr),
       };
-      renderPixelStage(sidebarCanvas, sz.w, sz.h, dpr, (vCtx, vw, vh) =>
-        drawSidebarGarden(vCtx, vw, vh, pal)
+      blitStage(sidebarCanvas, sz.w, sz.h, dpr, (vCtx, vw, vh) =>
+        drawSidebarFootage(vCtx, vw, vh, palette, phase)
       );
     }
 
@@ -396,19 +509,49 @@ export function initAtmosphere() {
         w: Math.round(topbarEl.clientWidth * dpr),
         h: Math.round(topbarEl.clientHeight * dpr),
       };
-      renderPixelStage(topbarCanvas, sz.w, sz.h, dpr, (vCtx, vw, vh) =>
-        drawTopbarCanopy(vCtx, vw, vh, pal)
+      blitStage(topbarCanvas, sz.w, sz.h, dpr, (vCtx, vw, vh) =>
+        drawTopbarFootage(vCtx, vw, vh, palette, phase)
       );
     }
   }
 
-  function renderAll() {
-    renderMainBackdrop();
-    renderNavPixelCanvases();
-    document.documentElement.dataset.atmosphereReady = 'true';
+  function stopLoop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
   }
 
-  // Physical-pixel snapping observer for integer-scaled pixel art canvases
+  // Throttle pixel-art stepping cleanly (~15fps retro wallpaper cadence) for crisp low-CPU motion
+  function tick(ts) {
+    if (document.hidden || reducedMotion.matches) {
+      stopLoop();
+      return;
+    }
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+    accTime += dt;
+    if (accTime >= 0.066) {
+      phase += accTime;
+      accTime = 0;
+      renderNavFootage();
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function startOrFreeze() {
+    stopLoop();
+    renderMainBackdrop();
+    renderNavFootage();
+    document.documentElement.dataset.atmosphereReady = 'true';
+    if (!reducedMotion.matches && !document.hidden) {
+      lastTs = 0;
+      accTime = 0;
+      rafId = requestAnimationFrame(tick);
+    }
+  }
+
   const ro = new ResizeObserver((entries) => {
     const dpr = window.devicePixelRatio || 1;
     for (const entry of entries) {
@@ -417,7 +560,7 @@ export function initAtmosphere() {
       const physH = box ? box.blockSize : Math.round(entry.contentRect.height * dpr);
       stageSizes.set(entry.target, { w: physW, h: physH });
     }
-    renderNavPixelCanvases();
+    renderNavFootage();
   });
 
   for (const el of [sidebarEl, topbarEl]) {
@@ -429,32 +572,51 @@ export function initAtmosphere() {
     }
   }
 
-  renderAll();
+  startOrFreeze();
 
   let resizeTimer = null;
   const onResize = () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(renderAll, 120);
+    resizeTimer = setTimeout(() => {
+      renderMainBackdrop();
+      renderNavFootage();
+    }, 120);
   };
   window.addEventListener('resize', onResize, { passive: true });
 
+  const onVisibility = () => {
+    if (document.hidden) stopLoop();
+    else startOrFreeze();
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
   const observer = new MutationObserver(() => {
+    palette = buildPalette(bridge);
     prebakeCottonGrain(grainHost, bridge);
-    renderAll();
+    renderMainBackdrop();
+    renderNavFootage();
   });
   observer.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme', 'class'],
   });
 
-  const media = window.matchMedia('(prefers-color-scheme: dark)');
-  const onMedia = () => renderAll();
-  media.addEventListener('change', onMedia);
+  const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const onThemeMedia = () => {
+    palette = buildPalette(bridge);
+    renderMainBackdrop();
+    renderNavFootage();
+  };
+  mediaDark.addEventListener('change', onThemeMedia);
+  reducedMotion.addEventListener('change', startOrFreeze);
 
   return () => {
+    stopLoop();
     ro.disconnect();
     window.removeEventListener('resize', onResize);
+    document.removeEventListener('visibilitychange', onVisibility);
     observer.disconnect();
-    media.removeEventListener('change', onMedia);
+    mediaDark.removeEventListener('change', onThemeMedia);
+    reducedMotion.removeEventListener('change', startOrFreeze);
   };
 }

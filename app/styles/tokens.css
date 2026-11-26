@@ -11,6 +11,8 @@
   --bg-elevated: #ffffff;
   --bg-inset: #ebe6da;
   --bg-input: #f1ede3;
+  --nav-scrim: rgba(246, 243, 235, 0.84);
+  --nav-scrim-strong: rgba(251, 249, 244, 0.94);
 
   --text-primary: #181b19;
   --text-secondary: #3f4641;
@@ -54,6 +56,8 @@
   --bg-elevated: #222723;
   --bg-inset: #101311;
   --bg-input: #141815;
+  --nav-scrim: rgba(19, 22, 20, 0.84);
+  --nav-scrim-strong: rgba(26, 30, 27, 0.94);
 
   --text-primary: #eceae2;
   --text-secondary: #c4c8c0;
