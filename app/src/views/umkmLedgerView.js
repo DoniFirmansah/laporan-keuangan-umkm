@@ -2,6 +2,7 @@ import { formatRp } from '../engine/accounting.js';
 import {
   ACCOUNT_MAP,
   computeUmkmAccounting,
+  sanitizeUmkmState,
   UMKM_QUICK_PRESETS,
 } from '../engine/journalEngine.js';
 import { downloadCustomWorkbook } from '../engine/xlsxExporter.js';
@@ -86,7 +87,7 @@ export function renderUmkmLedgerView(
           </div>
           <div class="search-box">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="umkm-search" type="search" value="${esc(query)}" placeholder="Cari keterangan, tanggal, atau akun..." aria-label="Cari transaksi jurnal" />
+            <input id="umkm-search" type="search" value="${esc(state.umkmQuery || '')}" placeholder="Cari keterangan, tanggal, atau akun..." aria-label="Cari transaksi jurnal" />
           </div>
         </div>
 
@@ -404,9 +405,15 @@ export function renderUmkmLedgerView(
   container.querySelectorAll('[data-del-entry]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.delEntry;
+      const prevEntries = umkm.entries;
       const nextEntries = umkm.entries.filter((e) => e.id !== id);
       onUpdateUmkm({ umkmState: { ...umkm, entries: nextEntries } });
-      onToast(`Transaksi ${id} dihapus; seluruh laporan otomatis diperbarui.`);
+      onToast(`Transaksi ${id} dihapus; laporan otomatis diperbarui.`, {
+        actionLabel: 'Urungkan',
+        onAction: () => {
+          onUpdateUmkm({ umkmState: { ...umkm, entries: prevEntries } });
+        },
+      });
     });
   });
 
@@ -442,18 +449,17 @@ export function renderUmkmLedgerView(
     if (!file) return;
     try {
       const parsed = JSON.parse(await file.text());
-      if (!parsed || !Array.isArray(parsed.entries)) {
-        throw new Error('Format JSON tidak valid.');
-      }
-      const check = computeUmkmAccounting(parsed.entries);
-      if (!check.isJournalBalanced) {
-        onToast('Gagal pulihkan: ditemukan jurnal yang tidak seimbang (Debit ≠ Kredit).');
+      const res = sanitizeUmkmState(parsed);
+      if (!res.ok) {
+        onToast(`Gagal pulihkan: ${res.error}`);
         return;
       }
-      onUpdateUmkm({ umkmState: parsed });
-      onToast(`Berhasil memulihkan ${parsed.entries.length} transaksi terverifikasi seimbang.`);
+      onUpdateUmkm({ umkmState: res.state });
+      onToast(`Berhasil memulihkan ${res.state.entries.length} transaksi terverifikasi seimbang.`);
     } catch {
       onToast('File cadangan JSON tidak valid atau rusak.');
+    } finally {
+      e.target.value = '';
     }
   });
 

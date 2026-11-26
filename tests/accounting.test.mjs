@@ -22,6 +22,9 @@ import {
 import {
   computeUmkmAccounting,
   DEFAULT_UMKM_STATE,
+  nextJournalId,
+  sanitizeUmkmState,
+  UMKM_QUICK_PRESETS,
   validateJournalEntry,
 } from '../app/src/engine/journalEngine.js';
 import { generateCustomWorkbookBytes } from '../app/src/engine/xlsxExporter.js';
@@ -133,4 +136,97 @@ test('Mesin Double-Entry UMKM: Debit = Kredit, Neraca Seimbang, dan Arus Kas Sin
   assert.equal(bytes[0], 0x50);
   assert.equal(bytes[1], 0x4b);
   assert.ok(bytes.length > 3500);
+});
+
+test('Stress & Destructive Test: jurnal kosong, ID unik pasca hapus, JSON rusak, pembagi nol & 16 preset', () => {
+  // 1. Jurnal kosong (user menghapus semua transaksi)
+  const emptyRep = computeUmkmAccounting([]);
+  assert.equal(emptyRep.isJournalBalanced, true);
+  assert.equal(emptyRep.balanceSheet.isBalanced, true);
+  assert.equal(emptyRep.cashFlow.isCashReconciled, true);
+  const emptyXlsx = generateCustomWorkbookBytes(
+    { businessName: 'Kosong', periodLabel: '2026', entries: [] },
+    emptyRep
+  );
+  const emptyText = new TextDecoder().decode(emptyXlsx);
+  assert.equal(emptyText.includes('SUM(E5:E4)'), false);
+  assert.equal(emptyText.includes('SUM(C5:C4)'), false);
+
+  // 2. ID unik setelah menghapus transaksi di tengah
+  const afterDelete = DEFAULT_UMKM_STATE.entries.filter((e) => e.id !== 'JRN-002');
+  assert.equal(nextJournalId(afterDelete), 'JRN-014');
+
+  // 3. Penolakan JSON rusak / tidak seimbang / berbahaya
+  assert.equal(sanitizeUmkmState(null).ok, false);
+  assert.equal(sanitizeUmkmState({ entries: 'bad' }).ok, false);
+  assert.equal(
+    sanitizeUmkmState({
+      entries: [
+        {
+          id: 'J1',
+          date: '2026-11-26',
+          description: 'Negatif',
+          lines: [
+            { accountCode: '1-101', debit: -100, credit: 0 },
+            { accountCode: '4-101', debit: 0, credit: -100 },
+          ],
+        },
+      ],
+    }).ok,
+    false
+  );
+  assert.equal(
+    sanitizeUmkmState({
+      entries: [
+        {
+          id: 'J1',
+          date: '2026-11-26',
+          description: 'Kode palsu',
+          lines: [
+            { accountCode: '9-999', debit: 1000, credit: 0 },
+            { accountCode: '4-101', debit: 0, credit: 1000 },
+          ],
+        },
+      ],
+    }).ok,
+    false
+  );
+
+  // 4. Stress test seluruh 16 preset transaksi UMKM
+  const stressEntries = UMKM_QUICK_PRESETS.map((p, idx) => ({
+    id: `JRN-${String(idx + 1).padStart(3, '0')}`,
+    date: '2026-11-26',
+    description: p.label,
+    presetId: p.id,
+    lines: [
+      { accountCode: p.debit, debit: (idx + 1) * 150000, credit: 0 },
+      { accountCode: p.credit, debit: 0, credit: (idx + 1) * 150000 },
+    ],
+  }));
+  const stressRep = computeUmkmAccounting(stressEntries);
+  assert.equal(stressRep.isJournalBalanced, true);
+  assert.equal(stressRep.isTrialBalanced, true);
+  assert.equal(stressRep.balanceSheet.isBalanced, true);
+  assert.equal(stressRep.cashFlow.isCashReconciled, true);
+
+  // 5. Pembagi nol pada rasio keuangan tidak menghasilkan NaN atau Infinity
+  const zeroRatios = computeRatiosFromSnapshot({
+    cash: 0,
+    inventory: 0,
+    currentAssets: 0,
+    fixedAssets: 0,
+    totalAssets: 0,
+    shortTermLiab: 0,
+    longTermLiab: 0,
+    totalLiab: 0,
+    totalEquity: 0,
+    sales: 0,
+    grossProfit: 0,
+    ebit: 0,
+    interest: 0,
+    eat: 0,
+  });
+  for (const r of zeroRatios) {
+    assert.equal(Number.isFinite(r.value), true);
+  }
 });

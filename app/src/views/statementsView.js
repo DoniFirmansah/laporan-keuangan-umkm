@@ -20,6 +20,14 @@ const SUBTABS = [
   { id: 't65', label: '6.5 Neraca Lancar Maju' },
 ];
 
+function esc(str) {
+  return String(str ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
 export function renderStatementsView(container, state, { onStateChange }) {
   const activeTab = state.statementTab || 't61';
   const calcMode = state.calcMode || 'actual';
@@ -361,7 +369,7 @@ export function renderStatementsView(container, state, { onStateChange }) {
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="search-box">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="stmt-search" type="search" value="${searchQuery}" placeholder="Cari nama atau kode akun..." aria-label="Cari akun laporan" />
+          <input id="stmt-search" type="search" value="${esc(state.statementQuery || '')}" placeholder="Cari nama atau kode akun..." aria-label="Cari akun laporan" />
         </div>
 
         <div class="segmented" role="group" aria-label="Mode angka perhitungan">

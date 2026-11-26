@@ -256,8 +256,8 @@ export function generateUmkmLedgerWorkbookBytes(umkmState, report) {
     { val: '', style: 5 },
     { val: '', style: 5 },
     { val: '', style: 5 },
-    { formula: `SUM(E${jrnStart}:E${jrnEnd})`, cached: report.journalTotalDebit, style: 4 },
-    { formula: `SUM(F${jrnStart}:F${jrnEnd})`, cached: report.journalTotalCredit, style: 4 },
+    { formula: jrnEnd >= jrnStart ? `SUM(E${jrnStart}:E${jrnEnd})` : '0', cached: report.journalTotalDebit, style: 4 },
+    { formula: jrnEnd >= jrnStart ? `SUM(F${jrnStart}:F${jrnEnd})` : '0', cached: report.journalTotalCredit, style: 4 },
   ]);
   const jrnTotRow = jrnRows.length;
   jrnRows.push([
@@ -294,8 +294,8 @@ export function generateUmkmLedgerWorkbookBytes(umkmState, report) {
   tbRows.push([
     { val: 'TOTAL NERACA SALDO', style: 5 },
     { val: '', style: 5 },
-    { formula: `SUM(C${tbStart}:C${tbEnd})`, cached: report.tbDebit, style: 4 },
-    { formula: `SUM(D${tbStart}:D${tbEnd})`, cached: report.tbCredit, style: 4 },
+    { formula: tbEnd >= tbStart ? `SUM(C${tbStart}:C${tbEnd})` : '0', cached: report.tbDebit, style: 4 },
+    { formula: tbEnd >= tbStart ? `SUM(D${tbStart}:D${tbEnd})` : '0', cached: report.tbCredit, style: 4 },
   ]);
 
   // Sheet 3: Laba Rugi & Neraca

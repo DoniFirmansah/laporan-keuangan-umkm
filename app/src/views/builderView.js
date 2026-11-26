@@ -244,7 +244,9 @@ export function renderBuilderView(
 
   container.querySelectorAll('[data-scalar]').forEach((inp) => {
     inp.addEventListener('change', (e) => {
-      const val = Math.max(0, Number(e.target.value || 0));
+      const raw = Number(e.target.value);
+      const val = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+      e.target.value = String(val);
       onUpdateCustom({ ...custom, [inp.dataset.scalar]: val });
     });
   });
@@ -253,8 +255,11 @@ export function renderBuilderView(
     inp.addEventListener('change', (e) => {
       const grp = inp.dataset.group;
       const idx = Number(inp.dataset.idx);
+      const raw = Number(e.target.value);
+      const val = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+      e.target.value = String(val);
       const nextList = custom[grp].map((item, i) =>
-        i === idx ? { ...item, amount: Math.max(0, Number(e.target.value || 0)) } : item
+        i === idx ? { ...item, amount: val } : item
       );
       onUpdateCustom({ ...custom, [grp]: nextList });
     });

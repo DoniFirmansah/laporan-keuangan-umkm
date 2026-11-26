@@ -3,6 +3,8 @@ import { DEFAULT_CUSTOM_BUSINESS } from './data/bab6Data.js';
 import { MICROTASKS_LIST } from './data/blueprintData.js';
 import {
   DEFAULT_UMKM_STATE,
+  nextJournalId,
+  sanitizeUmkmState,
   UMKM_CHART_OF_ACCOUNTS,
   UMKM_QUICK_PRESETS,
   validateJournalEntry,
@@ -71,10 +73,11 @@ function loadInitialState() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return base;
     const parsed = JSON.parse(saved);
+    const restoredUmkm = parsed.umkmState ? sanitizeUmkmState(parsed.umkmState) : null;
     return {
       ...base,
       ...parsed,
-      umkmState: parsed.umkmState || base.umkmState,
+      umkmState: restoredUmkm?.ok ? restoredUmkm.state : base.umkmState,
       customBusiness: parsed.customBusiness || base.customBusiness,
       completedMicrotasks: parsed.completedMicrotasks || base.completedMicrotasks,
     };
@@ -103,14 +106,33 @@ function applyTheme(theme) {
   }
 }
 
-function showToast(message) {
+function showToast(message, options = {}) {
   const region = document.getElementById('toast-region');
   if (!region) return;
   const el = document.createElement('div');
   el.className = 'toast';
-  el.textContent = message;
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.justifyContent = 'space-between';
+  el.style.gap = '10px';
+  const msgSpan = document.createElement('span');
+  msgSpan.textContent = message;
+  el.appendChild(msgSpan);
+
+  if (options.actionLabel && typeof options.onAction === 'function') {
+    const actBtn = document.createElement('button');
+    actBtn.type = 'button';
+    actBtn.className = 'btn btn-secondary btn-sm';
+    actBtn.textContent = options.actionLabel;
+    actBtn.addEventListener('click', () => {
+      options.onAction();
+      el.remove();
+    });
+    el.appendChild(actBtn);
+  }
+
   region.appendChild(el);
-  setTimeout(() => el.remove(), 3400);
+  setTimeout(() => el.remove(), options.actionLabel ? 6500 : 3400);
 }
 
 function closeMobileSidebar() {
@@ -136,6 +158,11 @@ function render() {
   const titleEl = document.getElementById('topbar-title');
   const subtitleEl = document.getElementById('topbar-subtitle');
   if (!main) return;
+
+  const activeEl = document.activeElement;
+  const activeId = activeEl && activeEl.id && main.contains(activeEl) ? activeEl.id : null;
+  const selStart = activeId && typeof activeEl.selectionStart === 'number' ? activeEl.selectionStart : null;
+  const selEnd = activeId && typeof activeEl.selectionEnd === 'number' ? activeEl.selectionEnd : null;
 
   const meta = VIEW_META[state.view] || VIEW_META.umkm;
   if (titleEl) titleEl.textContent = meta.title;
@@ -200,6 +227,20 @@ function render() {
         onToast: showToast,
       });
   }
+
+  if (activeId) {
+    const restored = document.getElementById(activeId);
+    if (restored) {
+      restored.focus({ preventScroll: true });
+      if (selStart !== null && typeof restored.setSelectionRange === 'function') {
+        try {
+          restored.setSelectionRange(selStart, selEnd ?? selStart);
+        } catch {
+          // Ignore selection error on non-text inputs
+        }
+      }
+    }
+  }
 }
 
 function openAddAccountDialog() {
@@ -263,7 +304,30 @@ function openJournalModal(presetId) {
   if (amountInp) amountInp.value = '';
   if (descInp) descInp.value = '';
   applyJournalPreset(presetId || UMKM_QUICK_PRESETS[0].id);
+  updateJournalBalancePreview();
   dlg?.showModal();
+}
+
+function updateJournalBalancePreview() {
+  const preview = document.getElementById('jrn-balance-preview');
+  const amount = Number(document.getElementById('jrn-amount')?.value || 0);
+  const debitAcc = document.getElementById('jrn-debit-acc')?.value;
+  const creditAcc = document.getElementById('jrn-credit-acc')?.value;
+  if (!preview) return;
+
+  if (debitAcc && creditAcc && debitAcc === creditAcc) {
+    preview.className = 'alert alert-err';
+    preview.innerHTML = '<span>Verifikasi Keseimbangan:</span><strong>Akun Debit &amp; Kredit tidak boleh sama</strong>';
+    return;
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    preview.className = 'alert alert-warn';
+    preview.innerHTML = '<span>Verifikasi Keseimbangan:</span><strong>Masukkan nominal &gt; Rp0</strong>';
+    return;
+  }
+  const fmt = `Rp${amount.toLocaleString('id-ID')}`;
+  preview.className = 'alert alert-ok';
+  preview.innerHTML = `<span>Verifikasi Keseimbangan:</span><strong class="tabular">Debit ${fmt} = Kredit ${fmt} (SEIMBANG)</strong>`;
 }
 
 function wireGlobalControls() {
@@ -313,7 +377,11 @@ function wireGlobalControls() {
   document.getElementById('jrn-preset')?.addEventListener('change', (e) => {
     document.getElementById('jrn-desc').value = '';
     applyJournalPreset(e.target.value);
+    updateJournalBalancePreview();
   });
+  document.getElementById('jrn-amount')?.addEventListener('input', updateJournalBalancePreview);
+  document.getElementById('jrn-debit-acc')?.addEventListener('change', updateJournalBalancePreview);
+  document.getElementById('jrn-credit-acc')?.addEventListener('change', updateJournalBalancePreview);
   document.getElementById('jrn-close-btn')?.addEventListener('click', () => jrnDialog?.close());
   document.getElementById('jrn-cancel-btn')?.addEventListener('click', () => jrnDialog?.close());
 
@@ -332,9 +400,8 @@ function wireGlobalControls() {
       return;
     }
 
-    const nextNum = state.umkmState.entries.length + 1;
     const candidate = {
-      id: `JRN-${String(nextNum).padStart(3, '0')}`,
+      id: nextJournalId(state.umkmState.entries),
       date,
       description,
       presetId,

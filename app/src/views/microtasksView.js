@@ -1,5 +1,13 @@
 import { MICROTASKS_LIST } from '../data/blueprintData.js';
 
+function esc(str) {
+  return String(str ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
 export function renderMicrotasksView(container, state, { onStateChange }) {
   const epicFilter = state.microtaskEpic || 'Semua';
   const query = (state.microtaskQuery || '').trim().toLowerCase();
@@ -40,7 +48,7 @@ export function renderMicrotasksView(container, state, { onStateChange }) {
       <div class="toolbar" style="margin-bottom:16px;">
         <div class="search-box">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="mt-search" type="search" value="${query}" placeholder="Cari ID, microtask, atau artefak..." aria-label="Cari microtask" />
+          <input id="mt-search" type="search" value="${esc(state.microtaskQuery || '')}" placeholder="Cari ID, microtask, atau artefak..." aria-label="Cari microtask" />
         </div>
 
         <select id="mt-epic" style="max-width:290px;" aria-label="Filter Epic">

@@ -249,6 +249,64 @@ export function validateJournalEntry(entry) {
   };
 }
 
+export function nextJournalId(entries = []) {
+  let maxNum = 0;
+  for (const e of entries) {
+    const m = /^JRN-(\d+)$/.exec(String(e?.id || ''));
+    if (m) maxNum = Math.max(maxNum, Number(m[1]));
+  }
+  return `JRN-${String(maxNum + 1).padStart(3, '0')}`;
+}
+
+export function sanitizeUmkmState(raw) {
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.entries)) {
+    return { ok: false, error: 'Struktur JSON harus memiliki daftar entries.' };
+  }
+  const businessName = String(raw.businessName || 'Usaha UMKM').trim().slice(0, 80) || 'Usaha UMKM';
+  const periodLabel = String(raw.periodLabel || 'Periode Berjalan').trim().slice(0, 50) || 'Periode Berjalan';
+  const ownerName = String(raw.ownerName || 'UMKM Mandiri').trim().slice(0, 60) || 'UMKM Mandiri';
+
+  const seenIds = new Set();
+  const cleanEntries = [];
+
+  for (let i = 0; i < raw.entries.length; i++) {
+    const item = raw.entries[i];
+    const check = validateJournalEntry(item);
+    if (!check.valid) {
+      return {
+        ok: false,
+        error: `Transaksi ke-${i + 1} (${item?.id || 'tanpa ID'}) gagal validasi: ${check.errors[0]}`,
+      };
+    }
+    let id = String(item.id || '').trim() || nextJournalId(cleanEntries);
+    if (seenIds.has(id)) {
+      id = nextJournalId(cleanEntries);
+    }
+    seenIds.add(id);
+    cleanEntries.push({
+      id,
+      date: String(item.date).slice(0, 10),
+      description: String(item.description).trim().slice(0, 120),
+      presetId: item.presetId ? String(item.presetId) : 'manual',
+      lines: item.lines.map((ln) => ({
+        accountCode: String(ln.accountCode),
+        debit: Number(ln.debit || 0),
+        credit: Number(ln.credit || 0),
+      })),
+    });
+  }
+
+  return {
+    ok: true,
+    state: {
+      businessName,
+      ownerName,
+      periodLabel,
+      entries: cleanEntries,
+    },
+  };
+}
+
 function classifyCashFlowActivity(entry) {
   const counterparts = (entry.lines || []).filter((l) => l.accountCode !== '1-101');
   if (counterparts.some((l) => ACCOUNT_MAP[l.accountCode]?.cashFlowGroup === 'investing')) {
